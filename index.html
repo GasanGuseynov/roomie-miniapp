@@ -1,103 +1,113 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Roomie+ — Бронь переговорных</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #121212;
-      color: white;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background: #1e1e1e;
-      padding: 20px;
-      text-align: center;
-    }
-    header img {
-      max-height: 60px;
-    }
-    main {
-      padding: 20px;
-    }
-    .room {
-      background: #1e1e1e;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .btn {
-      background: #333;
-      border: none;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .btn:hover {
-      background: #444;
-    }
-    .time-select {
-      margin-top: 10px;
-      display: flex;
-      gap: 10px;
-    }
-    .time-btn {
-      padding: 8px 12px;
-      background: #333;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .time-btn:hover {
-      background: #444;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <img src="logo.png" alt="Прайм Самолет Плюс" />
-  </header>
-  <main>
-    <h2>Выберите переговорную</h2>
-    <div class="room">
-      <span>Переговорная №1</span>
-      <div class="time-select">
-        <div class="time-btn" onclick="bookRoom('Переговорная №1', 30)">30 мин</div>
-        <div class="time-btn" onclick="bookRoom('Переговорная №1', 60)">1 час</div>
-        <div class="time-btn" onclick="bookRoom('Переговорная №1', 90)">1,5 часа</div>
-        <div class="time-btn" onclick="bookRoom('Переговорная №1', 120)">2 часа</div>
-      </div>
-    </div>
-    <div class="room">
-      <span>Переговорная №2</span>
-      <div class="time-select">
-        <div class="time-btn" onclick="bookRoom('Переговорная №2', 30)">30 мин</div>
-        <div class="time-btn" onclick="bookRoom('Переговорная №2', 60)">1 час</div>
-        <div class="time-btn" onclick="bookRoom('Переговорная №2', 90)">1,5 часа</div>
-        <div class="time-btn" onclick="bookRoom('Переговорная №2', 120)">2 часа</div>
-      </div>
-    </div>
-  </main>
+const { Telegraf } = require('telegraf');
+const dotenv = require('dotenv'); dotenv.config();
+const fs = require('fs');
+const path = require('path');
+const nodemailer = require('nodemailer');
+const { createEvent } = require('ics');
+const { google } = require('googleapis');
 
-  <script>
-    function bookRoom(room, duration) {
-      const now = new Date();
-      const start = now.toISOString();
-      const end = new Date(now.getTime() + duration * 60000).toISOString();
+const bot = new Telegraf(process.env.BOT_TOKEN);
 
-      const booking = { room, start, end };
-      alert(`Забронировано: ${room} на ${duration} минут`);
+// --- старт: кнопка открытия мини-аппа
+bot.start((ctx) => {
+  ctx.reply('Открой мини-приложение Roomie+', {
+    reply_markup: {
+      inline_keyboard: [[
+        { text: 'Открыть Roomie+', web_app: { url: process.env.WEBAPP_URL } }
+      ]]
+    }
+  });
+});
 
-      if (window.Telegram?.WebApp) {
-        window.Telegram.WebApp.sendData(JSON.stringify(booking));
+// --- приём данных из мини-аппа
+bot.on('message', async (ctx) => {
+  const data = ctx.message.web_app_data?.data;
+  if (!data) return;
+  let payload;
+  try { payload = JSON.parse(data); } catch { return; }
+
+  if (payload.type === 'booking_created' || payload.type === 'sync_calendar') {
+    const list = payload.data || payload.bookings || [];
+    if (!list.length) return;
+
+    // 1) локальный JSON (на всякий)
+    const file = path.join(__dirname, 'bookings.json');
+    let arr = [];
+    try { arr = JSON.parse(fs.readFileSync(file, 'utf8')); } catch {}
+    arr.push(...list);
+    fs.writeFileSync(file, JSON.stringify(arr, null, 2));
+
+    // 2) почта/Exchange — отправим .ics каждому событию
+    if (process.env.SMTP_HOST && process.env.MAIL_TO) {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: Number(process.env.SMTP_PORT || 587),
+          secure: process.env.SMTP_SECURE === 'true',
+          auth: (process.env.SMTP_USER && process.env.SMTP_PASS) ? {
+            user: process.env.SMTP_USER, pass: process.env.SMTP_PASS
+          } : undefined
+        });
+
+        for (const b of list) {
+          const [y,mo,d] = b.date.split('-').map(Number);
+          const [sh,sm] = b.start.split(':').map(Number);
+          const [eh,em] = b.end.split(':').map(Number);
+          const ics = await new Promise((res, rej) => {
+            createEvent({
+              start: [y, mo, d, sh, sm],
+              end:   [y, mo, d, eh, em],
+              title: b.title || 'Встреча',
+              description: `Переговорная: ${b.roomId || ''}`,
+              uid: (b.id || Date.now()) + '@roomie',
+              status: 'CONFIRMED'
+            }, (err, value) => err ? rej(err) : res(value));
+          });
+
+          await transporter.sendMail({
+            from: process.env.SMTP_USER || 'roomie@localhost',
+            to: process.env.MAIL_TO,
+            subject: `Бронь: ${b.title} (${b.start}–${b.end})`,
+            text: `Дата: ${b.date}\nВремя: ${b.start}–${b.end}\nКомната: ${b.roomId}`,
+            alternatives: [{ contentType: 'text/calendar; charset="utf-8"; method=REQUEST', content: ics }],
+            icalEvent: { filename: 'invite.ics', content: ics }
+          });
+        }
+      } catch (e) {
+        console.error('SMTP error:', e.message);
       }
     }
-  </script>
-</body>
-</html>
+
+    // 3) Google Calendar (если заданы переменные)
+    if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY) {
+      try {
+        const jwt = new google.auth.JWT(
+          process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+          undefined,
+          process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          ['https://www.googleapis.com/auth/calendar']
+        );
+        const calendar = google.calendar({ version: 'v3', auth: jwt });
+        for (const b of list) {
+          const isoStart = `${b.date}T${b.start}:00`;
+          const isoEnd   = `${b.date}T${b.end}:00`;
+          await calendar.events.insert({
+            calendarId: process.env.GOOGLE_CALENDAR_ID || 'primary',
+            requestBody: {
+              summary: b.title || 'Встреча',
+              description: `Переговорная: ${b.roomId || ''}`,
+              start: { dateTime: isoStart },
+              end:   { dateTime: isoEnd }
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Google error:', e.message);
+      }
+    }
+
+    await ctx.reply(`Синхронизировано: ${list.length} броней ✅`);
+  }
+});
+
+bot.launch().then(()=>console.log('Bot started'));
