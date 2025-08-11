@@ -1,409 +1,284 @@
 <!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Roomie+ — Бронь переговорных</title>
-<meta name="theme-color" content="#121212"/>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-:root{--bg:#121212;--panel:#1a1a1a;--panel2:#161616;--muted:#9ca3af;--ink:#fff;--border:#2a2a2a;--accent:#ffb400;--btn:#2f2f2f;--btnh:#3a3a3a;--r:16px}
-*{box-sizing:border-box} html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.45 system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial}
-.wrap{max-width:1080px;margin:0 auto;padding:18px;display:grid;gap:14px}
-header{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.brand{display:flex;align-items:center;gap:12px}
-.brand img{height:36px;border-radius:8px;object-fit:contain}
-.brand h1{margin:0;font-weight:900;font-size:18px}
-.badge{background:#fff;color:#000;padding:2px 8px;border-radius:8px;margin-left:6px}
-.hint{color:var(--muted);font-size:12px}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:14px}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.field{display:grid;gap:6px;min-width:160px}
-.label{font-size:12px;color:var(--muted)}
-input,select{background:var(--panel2);color:var(--ink);border:1px solid var(--border);padding:10px 12px;border-radius:12px;outline:none}
-.btn{background:var(--btn);color:var(--ink);border:1px solid var(--border);padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:600}
-.btn:hover{background:var(--btnh)}
-.btnAccent{background:var(--accent);color:#000;border-color:#ffb400}
-.btnAccent:hover{filter:brightness(1.07)}
-.room{background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:14px}
-.roomTitle{font-weight:800}
-.chips{display:flex;gap:8px;flex-wrap:wrap}
-.chip{background:#242424;border:1px solid var(--border);padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:700;min-width:70px;text-align:center}
-.chip:hover{background:#2d2d2d}
-.toast{position:fixed;left:0;right:0;bottom:18px;display:grid;place-items:center;pointer-events:none}
-.toast>div{background:#fff;color:#000;padding:10px 14px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-.empty{padding:14px;border:1px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center}
-
-/* Календарь дня */
-.calCard{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:14px}
-.gridCal{display:grid;grid-template-columns:120px 1fr;gap:10px}
-.times div{height:42px;border-bottom:1px solid var(--border);padding-right:6px;text-align:right;color:var(--muted);font-size:12px;line-height:42px}
-.area{position:relative;background:#121212;border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.areaRow{height:42px;border-bottom:1px solid var(--border)}
-.block{position:absolute;left:8px;right:8px;border:1px solid;color:#fff;border-radius:10px;padding:6px 8px;font-size:12px;cursor:grab;user-select:none}
-.block:active{cursor:grabbing}
-.badgeStatus{font-size:11px;padding:2px 6px;border-radius:999px}
-.badgeAwait{background:rgba(251,191,36,.15);color:#fde68a;border:1px solid rgba(251,191,36,.35)}
-.badgeOK{background:rgba(52,211,153,.15);color:#a7f3d0;border:1px solid rgba(52,211,153,.35)}
-.badgeNo{background:rgba(248,113,113,.15);color:#fecaca;border:1px solid rgba(248,113,113,.35)}
-
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:grid;place-items:center;padding:16px;z-index:50}
-.modal>div{background:rgba(30,30,30,.9);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:16px;padding:16px;max-width:900px;width:100%}
-.hr{height:1px;background:var(--border);margin:12px -2px}
-@media(max-width:700px){.gridCal{grid-template-columns:90px 1fr}}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Roomie+ — Прайм Самолёт Плюс</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root{--bg:#0b0b0d;--panel:#131316;--muted:#9ca3af;--border:#26272b}
+    html,body,#app{height:100%}
+    body{background:var(--bg);color:#e5e7eb}
+    .card{background:var(--panel);border:1px solid var(--border)}
+    .row{display:flex;gap:.75rem;align-items:center}
+    .btn{background:#e5e7eb;color:#111827;border-radius:.75rem;padding:.5rem .75rem;font-size:.9rem}
+    .btnGhost{background:rgba(255,255,255,.06);border:1px solid var(--border);color:#e5e7eb;border-radius:.75rem;padding:.5rem .75rem}
+    .label{font-size:.75rem;color:var(--muted)}
+    .field input,.field select{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:.75rem;padding:.5rem .75rem;min-height:40px}
+    .noselect{-webkit-user-select:none;user-select:none}
+    .badge{font-size:.7rem;padding:.15rem .5rem;border-radius:9999px;border:1px solid var(--border);background:rgba(255,255,255,.06)}
+    .badgeOK{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4)}
+    .badgeAwait{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.4)}
+    .badgeNo{background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.4)}
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="brand">
-      <img src="logo.png" alt="Прайм Самолёт Плюс" onerror="this.style.display='none'"/>
-      <h1>прайм самолёт <span class="badge">плюс</span></h1>
-    </div>
-    <div class="row">
-      <span class="hint" id="env">Загрузка…</span>
-      <button class="btn" id="btnAuth">Войти по PIN</button>
-    </div>
-  </header>
-
-  <!-- Панель параметров -->
-  <section class="card">
-    <div class="row">
-      <div class="field">
-        <span class="label">Дата</span>
-        <input type="date" id="date">
+  <div id="app" class="min-h-full">
+    <header class="card rounded-2xl max-w-6xl mx-auto mt-3 mb-3 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="logo.png" class="h-8 w-8 rounded" onerror="this.style.display='none'"/>
+        <div class="text-xl font-extrabold tracking-tight">прайм самолёт <span class="px-2 py-0.5 rounded bg-white text-black ml-1">плюс</span></div>
       </div>
-      <div class="field">
-        <span class="label">Начало</span>
-        <input type="time" id="start" step="900" value="10:00">
+      <div id="wa" class="text-sm text-gray-400">Telegram WebApp: —</div>
+      <button id="auth" class="btn">Войти по PIN</button>
+    </header>
+
+    <main class="max-w-6xl mx-auto grid gap-4 px-3">
+      <!-- Панель бронирования -->
+      <section class="card rounded-2xl p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="field">
+            <div class="label">Дата</div>
+            <input type="date" id="date">
+          </div>
+          <div class="field">
+            <div class="label">Начало</div>
+            <input type="time" id="start" step="900" value="10:00">
+          </div>
+          <div class="field">
+            <div class="label">ФИО бронирующего</div>
+            <input id="person" placeholder="Иванов Иван">
+          </div>
+          <div class="field">
+            <div class="label">Название</div>
+            <input id="title" placeholder="Например: Синк по проекту">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+          <div class="field">
+            <div class="label">Повтор</div>
+            <select id="repeat"><option value="none">Без повтора</option><option value="daily">Каждый день</option><option value="weekly">Каждую неделю</option></select>
+          </div>
+          <div class="field">
+            <div class="label">Кол-во</div>
+            <select id="count">
+              <option>1</option><option>2</option><option>3</option><option>5</option><option>10</option>
+            </select>
+          </div>
+          <div class="flex items-end justify-end"><button id="sync" class="btn">Синхронизировать</button></div>
+        </div>
+      </section>
+
+      <!-- Список переговорных -->
+      <section class="card rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-2"><h2 class="text-lg font-semibold">Выберите переговорную</h2><div class="text-xs text-gray-400" id="roomsCount"></div></div>
+        <div id="rooms" class="grid gap-3"></div>
+      </section>
+
+      <!-- Календарь дня -->
+      <section class="card rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-semibold">Календарь дня</h2>
+          <div class="text-xs text-gray-400" id="roleBox">Роль: Пользователь</div>
+        </div>
+        <div id="cal"></div>
+      </section>
+
+      <!-- Мои брони -->
+      <section class="card rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-2"><h2 class="text-lg font-semibold">Мои брони</h2>
+          <a id="csvLink" class="btnGhost" download="bookings.csv">CSV</a>
+        </div>
+        <div id="list"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+  const tg=(window.Telegram&&window.Telegram.WebApp)||null;try{tg&&tg.ready()}catch(_){}
+  const LS='roomie_v3';
+  const uid=()=>Math.random().toString(36).slice(2,10);
+  const hm2m=(s)=>{const[a,b]=String(s||'00:00').split(':').map(Number);return (a||0)*60+(b||0)};
+  const m2hm=(m)=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+  const toISO=(d)=>new Date(d).toISOString().slice(0,10);
+  const todayISO=()=>toISO(new Date());
+
+  const defaultState={
+    role:'user', pins:{admin:'0404',user:'0000'},
+    settings:{workStart:'09:00',workEnd:'20:00',step:30,bufferBefore:0,bufferAfter:0},
+    rooms:[{id:'r1',name:'Переговорная №1',capacity:6},{id:'r2',name:'Переговорная №2',capacity:10},{id:'r3',name:'Zoom-капсула',capacity:2}],
+    bookings:[], __calDate:null
+  };
+  let state=load();
+  function load(){try{return JSON.parse(localStorage.getItem(LS))||structuredClone(defaultState)}catch{return structuredClone(defaultState)}}
+  function save(){localStorage.setItem(LS,JSON.stringify(state))}
+  const isAdmin=()=>state.role==='admin';
+
+  // UI refs
+  const $date=document.getElementById('date');
+  const $start=document.getElementById('start');
+  const $title=document.getElementById('title');
+  const $person=document.getElementById('person');
+  const $repeat=document.getElementById('repeat');
+  const $count=document.getElementById('count');
+  const $rooms=document.getElementById('rooms');
+  const $roomsCount=document.getElementById('roomsCount');
+  const $list=document.getElementById('list');
+  const $cal=document.getElementById('cal');
+  const $wa=document.getElementById('wa');
+  const $roleBox=document.getElementById('roleBox');
+
+  // init
+  $date.value = todayISO();
+  $wa.textContent = `Telegram WebApp: ${tg?'ok':'—'}`;
+  document.getElementById('auth').onclick=openAuth;
+  document.getElementById('sync').onclick=()=>{try{tg?.sendData&&tg.sendData(JSON.stringify({type:'sync_calendar',bookings:state.bookings}))}catch(_){}};
+
+  // Rooms list
+  function renderRooms(){
+    $roomsCount.textContent = `${state.rooms.length} шт.`;
+    $rooms.innerHTML = state.rooms.map(r=>`
+      <div class="card rounded-xl p-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="font-semibold">${r.name}</div>
+            <div class="text-xs text-gray-400">${r.capacity} мест</div>
+          </div>
+          <div class="row">
+            ${[30,60,90,120].map(m=>`<button class="btnGhost" data-room="${r.id}" data-min="${m}">${m===30?'30 мин':m===60?'1 час':m===90?'1,5 часа':'2 часа'}</button>`).join('')}
+          </div>
+        </div>
       </div>
-      <div class="field" style="min-width:260px">
-        <span class="label">Название</span>
-        <input id="title" placeholder="Например: Синк по проекту">
-      </div>
-      <div class="field">
-        <span class="label">Повтор</span>
-        <select id="repeat"><option value="none">Без повтора</option><option value="daily">Каждый день</option><option value="weekly">Каждую неделю</option></select>
-      </div>
-      <div class="field">
-        <span class="label">Кол-во</span>
-        <select id="count"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select>
-      </div>
-      <div class="field" style="margin-left:auto">
-        <span class="label">&nbsp;</span>
-        <button class="btn" id="sync">Синхронизировать</button>
-      </div>
-    </div>
-  </section>
+    `).join('');
+    $rooms.querySelectorAll('[data-room]').forEach(b=> b.onclick=()=> createBooking(b.dataset.room, Number(b.dataset.min)));
+  }
 
-  <!-- Комнаты -->
-  <section class="card" id="rooms"></section>
+  function expandRecurring(base){
+    const out=[]; const cnt=Number($count.value||1); const rep=$repeat.value;
+    const d0=new Date(base.date+'T00:00:00');
+    for(let i=0;i<cnt;i++){
+      const d=new Date(d0);
+      if(rep==='daily') d.setDate(d.getDate()+i);
+      else if(rep==='weekly') d.setDate(d.getDate()+7*i);
+      out.push({...base,date:toISO(d)});
+    }
+    return out;
+  }
 
-  <!-- Календарь дня -->
-  <section class="calCard">
-    <div class="row" style="justify-content:space-between;margin-bottom:6px">
-      <strong>Календарь дня</strong>
-      <div class="hint" id="roleHint"></div>
-    </div>
-    <div id="cal"></div>
-  </section>
+  function conflicts(a,b){
+    if(a.roomId!==b.roomId || a.date!==b.date) return false;
+    const bb=Number(state.settings.bufferBefore||0), ba=Number(state.settings.bufferAfter||0);
+    const aS=hm2m(a.start)-bb, aE=hm2m(a.end)+ba, bS=hm2m(b.start)-bb, bE=hm2m(b.end)+ba;
+    return aS<bE && bS<aE;
+  }
 
-  <!-- Список -->
-  <section class="card">
-    <div class="row" style="justify-content:space-between">
-      <strong>Мои брони</strong>
-      <a id="csv" class="btn" download="bookings.csv">Скачать CSV</a>
-    </div>
-    <div id="list" style="margin-top:8px"></div>
-  </section>
-</div>
+  function createBooking(roomId, minutes){
+    const title=($title.value||'Бронь').trim();
+    const date=$date.value; const start=$start.value||'10:00'; const end=m2hm(hm2m(start)+minutes);
+    const whoField=($person.value||'').trim();
+    const who = whoField || tg?.initDataUnsafe?.user?.username || 'you';
+    const base={id:uid(),roomId,title,date,start,end,who,status:'scheduled'};
+    const list=expandRecurring(base);
+    for(const x of list){ const hit=state.bookings.find(b=>conflicts(b,x)); if(hit){ toast(`Пересечение с «${hit.title}» (${hit.start}–${hit.end})`); return; } }
+    state.bookings.push(...list); save(); renderAll(); toast('Бронь создана');
+    try{tg?.sendData&&tg.sendData(JSON.stringify({type:'booking_created',data:list}))}catch(_){}
+  }
 
-<div class="toast" id="toast" hidden><div></div></div>
+  function removeBooking(id){ state.bookings = state.bookings.filter(b=>b.id!==id); save(); renderAll(); }
 
-<script>
-const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
-try{ if(tg){ tg.ready(); tg.expand(); document.getElementById('env').textContent='Telegram WebApp: ок'; } else { document.getElementById('env').textContent='Safe Mode'; } }catch{ document.getElementById('env').textContent='Safe Mode'; }
+  function updateBooking(p){ const i=state.bookings.findIndex(b=>b.id===p.id); if(i<0) return; const next={...state.bookings[i],...p};
+    if(state.bookings.some(b=>b.id!==next.id && conflicts(b,next))){ toast('Пересечение'); return; }
+    state.bookings[i]=next; save(); renderAll(); }
 
-const LS='roomie_pro_dark_v3';
-const uid=()=>Math.random().toString(36).slice(2,10);
-const hm2m=hm=>{const [h,m]=(hm||'00:00').split(':').map(Number);return (h||0)*60+(m||0);}
-const m2hm=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
-const toISODate=d=>new Date(d).toISOString().slice(0,10);
-const todayISO=()=>toISODate(new Date());
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const toast=m=>{const t=document.getElementById('toast');t.firstElementChild.textContent=m;t.hidden=false;clearTimeout(window.__tt);window.__tt=setTimeout(()=>t.hidden=true,2000);}
-
-let state = (()=>{try{return JSON.parse(localStorage.getItem(LS))}catch{return null}})() || {
-  role:'user', pins:{admin:'0404', user:'0000'},
-  settings:{ workStart:'08:00', workEnd:'20:00', step:30, bufferBefore:0, bufferAfter:0, checkinWindow:15, requireCheckin:true },
-  rooms:[ {id:'r1',name:'Переговорная №1',capacity:6}, {id:'r2',name:'Переговорная №2',capacity:10}, {id:'r3',name:'Zoom-капсула',capacity:2} ],
-  bookings:[]
-};
-const save=()=>localStorage.setItem(LS,JSON.stringify(state));
-const isAdmin=()=>state.role==='admin';
-
-const $date=document.getElementById('date'); const $start=document.getElementById('start');
-const $title=document.getElementById('title'); const $repeat=document.getElementById('repeat'); const $count=document.getElementById('count');
-$date.value=todayISO(); document.getElementById('roleHint').textContent='Роль: '+(isAdmin()?'Админ':'Пользователь');
-
-const durations=[{min:30,label:'30 мин'},{min:60,label:'1 час'},{min:90,label:'1,5 часа'},{min:120,label:'2 часа'}];
-
-function renderRooms(){
-  const host=document.getElementById('rooms');
-  host.innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:6px">
-    <strong>Выберите переговорную</strong>
-    <span class="hint">${state.rooms.length} шт.</span>
-  </div>` + state.rooms.map(r=>`
-    <div class="room">
-      <div><div class="roomTitle">${r.name}</div><div class="hint">${r.capacity} мест</div></div>
-      <div class="chips">
-        ${durations.map(d=>`<button class="chip" data-room="${r.id}" data-min="${d.min}">${d.label}</button>`).join('')}
-      </div>
-    </div>`).join('');
-  host.querySelectorAll('.chip').forEach(b=> b.onclick=()=> createBooking(b.dataset.room, Number(b.dataset.min)));
-}
-
-function conflicts(a,b, s=state.settings){
-  if(a.roomId!==b.roomId || a.date!==b.date) return false;
-  const bs=Number(s.bufferBefore||0), ba=Number(s.bufferAfter||0);
-  const aS=hm2m(a.start)-bs, aE=hm2m(a.end)+ba, bS=hm2m(b.start)-bs, bE=hm2m(b.end)+ba;
-  return aS < bE && bS < aE;
-}
-function expandRecurring(base){
-  const list=[]; const n=Number($count.value||1); const start=new Date(base.date+'T'+base.start);
-  for(let i=0;i<n;i++){ const d=new Date(start); if($repeat.value==='daily') d.setDate(d.getDate()+i); else if($repeat.value==='weekly') d.setDate(d.getDate()+7*i); list.push({...base, date:toISODate(d)}); }
-  return list;
-}
-function createBooking(roomId, minutes){
-  const title=($title.value||'Бронь').trim();
-  const date=$date.value; const start=$start.value||'10:00'; const end=m2hm(hm2m(start)+minutes);
-  const who = tg?.initDataUnsafe?.user?.username || 'you';
-  const base={id:uid(),roomId,title,date,start,end,who,status:'scheduled'};
-  const list=expandRecurring(base);
-
-  for(const x of list){ const hit=state.bookings.find(b=>conflicts(b,x)); if(hit){ toast(`Пересечение с «${hit.title}» (${hit.start}–${hit.end})`); return; } }
-  state.bookings.push(...list); save(); renderList(); renderCalendar(); toast('Бронь создана');
-
-  try{ tg?.sendData && tg.sendData(JSON.stringify({type:'booking_created',data:list})); }catch(_){}
-}
-
-function csvHref(){
-  const rows=[['title','room','date','start','end'],...state.bookings.map(b=>[b.title,b.roomId,b.date,b.start,b.end])];
-  const text=rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');
-  return 'data:text/csv;charset=utf-8,'+encodeURIComponent(text);
-}
-function icsHref(b){
-  const dt=(d,t)=>d.replaceAll('-','')+'T'+t.replace(':','')+'00';
-  const now=new Date(); const ds=now.toISOString().slice(0,10); const ts=now.toTimeString().slice(0,5);
-  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Roomie RU//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+(b.id||Date.now())+'@roomie','DTSTAMP:'+dt(ds,ts),'DTSTART:'+dt(b.date,b.start),'DTEND:'+dt(b.date,b.end),'SUMMARY:'+(b.title||'Встреча'),'DESCRIPTION:Переговорная '+(state.rooms.find(r=>r.id===b.roomId)?.name||'—'),'END:VEVENT','END:VCALENDAR'].join('\r\n');
-  return 'data:text/calendar;charset=utf-8,'+encodeURIComponent(ics);
-}
-function renderList(){
-  const box=document.getElementById('list');
-  if(!state.bookings.length){ box.innerHTML='<div class="empty">Пока нет бронирований</div>'; }
-  else{
-    const arr=[...state.bookings].sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
-    box.innerHTML = arr.map(b=>`
-      <div class="row" style="justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+  function renderList(){
+    const arr=[...state.bookings].sort((a,b)=> (a.date+a.start).localeCompare(b.date+b.start));
+    if(!arr.length){ $list.innerHTML='<div class="text-sm text-gray-400">Пока нет броней.</div>'; return; }
+    const icsHref=(b)=>{const dt=(d,t)=>d.replaceAll('-','')+'T'+t.replace(':','')+'00'; const ics=['BEGIN:VCALENDAR','VERSION:2.0','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+uid(),'DTSTAMP:'+dt(todayISO(), new Date().toTimeString().slice(0,5)),'DTSTART:'+dt(b.date,b.start),'DTEND:'+dt(b.date,b.end),'SUMMARY:'+b.title,'DESCRIPTION:'+ (state.rooms.find(r=>r.id===b.roomId)?.name||'Переговорная')+' — '+(b.who||''),'END:VEVENT','END:VCALENDAR'].join('\r\n'); return 'data:text/calendar;charset=utf-8,'+encodeURIComponent(ics) };
+    $list.innerHTML = arr.map(b=>`
+      <div class="flex items-center justify-between py-2 border-b border-[var(--border)]">
         <div>
-          <div><strong>${b.title}</strong> <span class="badgeStatus ${b.status==='checked-in'?'badgeOK':b.status==='awaiting'?'badgeAwait':b.status==='no-show'?'badgeNo':''}">${b.status||'—'}</span></div>
-          <div class="hint">${state.rooms.find(r=>r.id===b.roomId)?.name||'—'} · ${b.date} · ${b.start}–${b.end}</div>
+          <div class="font-medium">${b.title} <span class="badge ${b.status==='checked-in'?'badgeOK':b.status==='awaiting'?'badgeAwait':b.status==='no-show'?'badgeNo':''}">${b.status||'—'}</span></div>
+          <div class="text-xs text-gray-400">${state.rooms.find(r=>r.id===b.roomId)?.name||'—'} · ${b.date} · ${b.start}–${b.end} · ${b.who||'—'}</div>
         </div>
         <div class="row">
-          <a class="btn" href="${icsHref(b)}" download="booking-${b.id}.ics">ICS</a>
-          ${(isAdmin() || (tg?.initDataUnsafe?.user?.username)===b.who) ? `<button class="btn" data-del="${b.id}">Удалить</button>`:''}
+          <a class="btnGhost" download="booking-${b.id}.ics" href="${icsHref(b)}">ICS</a>
+          ${(isAdmin()||(tg?.initDataUnsafe?.user?.username)===b.who)?`<button class="btnGhost" data-del="${b.id}">Удалить</button>`:''}
         </div>
       </div>`).join('');
-    box.querySelectorAll('[data-del]').forEach(x=> x.onclick=()=>{ state.bookings=state.bookings.filter(b=>b.id!==x.dataset.del); save(); renderList(); renderCalendar(); });
+    $list.querySelectorAll('[data-del]').forEach(x=> x.onclick=()=> removeBooking(x.dataset.del));
+    // CSV
+    const header=['title','room','date','start','end','who'];
+    const rows=arr.map(b=>[b.title,state.rooms.find(r=>r.id===b.roomId)?.name||b.roomId,b.date,b.start,b.end,b.who]);
+    const csv=[header,...rows].map(r=> r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\n');
+    document.getElementById('csvLink').href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   }
-  document.getElementById('csv').href = csvHref();
-}
 
-/* ====== Календарь дня + drag&drop ====== */
-function renderCalendar(){
-  const host=document.getElementById('cal'); host.innerHTML='';
-  const day=$date.value||todayISO();
-  const dayStart=hm2m(state.settings.workStart), dayEnd=hm2m(state.settings.workEnd), step=Number(state.settings.step||30);
-  const slots=[]; for(let m=dayStart; m<=dayEnd; m+=60){ slots.push(m2hm(m)); }
-  const pxH=42, gridH=pxH*slots.length;
+  function renderCalendar(){
+    $roleBox.textContent = 'Роль: '+(isAdmin()?'Админ':'Пользователь');
+    $cal.innerHTML='';
+    const day = state.__calDate || $date.value || todayISO();
+    // Навигация дат
+    const nav=document.createElement('div'); nav.className='row mb-2';
+    nav.innerHTML = `<button class="btnGhost" id="prevD">←</button><input class="field" type="date" id="calDate" value="${day}"><button class="btnGhost" id="nextD">→</button>`;
+    $cal.appendChild(nav);
+    nav.querySelector('#prevD').onclick=()=>{const d=new Date(day+'T00:00:00'); d.setDate(d.getDate()-1); state.__calDate=toISO(d); renderCalendar();};
+    nav.querySelector('#nextD').onclick=()=>{const d=new Date(day+'T00:00:00'); d.setDate(d.getDate()+1); state.__calDate=toISO(d); renderCalendar();};
+    nav.querySelector('#calDate').onchange=(e)=>{state.__calDate=e.target.value; renderCalendar();};
 
-  const shell=document.createElement('div'); shell.className='gridCal';
-  const times=document.createElement('div'); times.className='times'; times.innerHTML=slots.map(()=>`<div></div>`).join(''); shell.appendChild(times);
-  const area=document.createElement('div'); area.className='area'; area.style.height=gridH+'px'; shell.appendChild(area);
-  slots.forEach(()=>{const r=document.createElement('div'); r.className='areaRow'; area.appendChild(r);});
+    const dayStart=hm2m(state.settings.workStart), dayEnd=hm2m(state.settings.workEnd), step=Number(state.settings.step||30);
+    const slots=[]; for(let m=dayStart;m<=dayEnd;m+=60){ slots.push(m2hm(m)); }
+    const pxH=42, gridH=pxH*slots.length;
 
-  // для каждой комнаты — дорисуем блоки
-  state.rooms.forEach((room,_ri)=>{
-    const list=state.bookings.filter(b=>b.roomId===room.id && b.date===day);
-    list.forEach(b=>{
-      const s=hm2m(b.start), e=hm2m(b.end);
-      const top=((s-dayStart)/(dayEnd-dayStart))*gridH;
-      const h=((e-s)/(dayEnd-dayStart))*gridH;
-      const el=document.createElement('div');
-      const color=b.status==='checked-in'?'rgba(52,211,153,.2)':b.status==='awaiting'?'rgba(251,191,36,.2)':b.status==='no-show'?'rgba(248,113,113,.2)':'rgba(99,102,241,.22)';
-      el.className='block'; el.style.background=color; el.style.borderColor=color.replace('.2', '.35'); el.style.top=Math.max(0,top)+'px'; el.style.height=Math.max(28,h)+'px';
-      el.innerHTML=`<div style="font-weight:700">${b.title}</div><div style="opacity:.8">${b.start}–${b.end} · ${room.name}</div>`;
-      el.ondblclick=()=> openEdit(b.id);
-      area.appendChild(el);
+    const shell=document.createElement('div'); shell.className='grid'; shell.style.gridTemplateColumns='90px 1fr'; $cal.appendChild(shell);
+    const times=document.createElement('div'); times.innerHTML=slots.map(t=>`<div class="h-[42px] text-right pr-2 text-xs text-gray-500 border-b" style="border-color:var(--border)">${t}</div>`).join(''); shell.appendChild(times);
+    const area=document.createElement('div'); area.className='relative noselect'; area.style.height=gridH+'px'; area.style.background='rgba(255,255,255,.03)'; shell.appendChild(area);
+    slots.forEach(()=>{const r=document.createElement('div'); r.className='h-[42px] border-b'; r.style.borderColor='var(--border)'; area.appendChild(r);});
 
-      // drag
-      let drag=null;
-      el.onmousedown=(ev)=>{
-        if(!isAdmin()) return; // двигать может только админ
-        const rect=area.getBoundingClientRect();
-        const dur=hm2m(b.end)-hm2m(b.start);
-        const offset=ev.clientY-(rect.top+((hm2m(b.start)-dayStart)/(dayEnd-dayStart))*gridH);
-        drag={id:b.id,dur,offset,y:ev.clientY};
-        document.onmousemove=e=>{ if(drag){ drag.y=e.clientY; } };
-        document.onmouseup=()=>{
-          if(!drag){ cleanup(); return; }
-          const r2=area.getBoundingClientRect();
-          let y=clamp(drag.y - r2.top - drag.offset, 0, gridH-10);
-          const ratio=y/gridH;
-          let startRaw=dayStart + Math.round((ratio*(dayEnd-dayStart))/step)*step;
-          let endMin=Math.min(dayEnd, startRaw+drag.dur);
-          const startMin=Math.max(dayStart, endMin-drag.dur);
-          // проверка пересечений
-          const next={...b,start:m2hm(startMin),end:m2hm(endMin)};
-          const hit=state.bookings.filter(x=>x.id!==b.id).find(x=>conflicts(x,next));
-          if(hit){ toast('Пересечение: '+hit.title); cleanup(); return; }
-          // применяем
-          state.bookings=state.bookings.map(x=>x.id===b.id?next:x); save(); renderList(); renderCalendar();
-          cleanup();
-        };
-        const cleanup=()=>{document.onmousemove=null;document.onmouseup=null;drag=null;}
-      }
+    state.rooms.forEach(room=>{
+      const list = state.bookings.filter(b=>b.roomId===room.id && b.date===day);
+      list.forEach(b=>{
+        const top=((hm2m(b.start)-dayStart)/(dayEnd-dayStart))*gridH;
+        const h=((hm2m(b.end)-hm2m(b.start))/(dayEnd-dayStart))*gridH;
+        const el=document.createElement('div');
+        const color = b.status==='checked-in'?'border-emerald-300/40 bg-emerald-400/15': b.status==='awaiting'?'border-amber-300/40 bg-amber-400/15': b.status==='no-show'?'border-rose-300/40 bg-rose-400/15':'border-indigo-300/40 bg-indigo-400/15';
+        el.className=`absolute left-24 right-3 ${color} border rounded-lg p-2 text-[12px] cursor-grab active:cursor-grabbing`;
+        el.style.top=top+'px'; el.style.height=Math.max(28,h)+'px';
+        el.innerHTML=`<div class="font-medium">${b.title}</div><div class="opacity-80 text-[11px]">${b.start}–${b.end} · ${room.name} · ${b.who||'—'}</div>`;
+        el.ondblclick=()=> openEdit(b.id);
+        area.appendChild(el);
+        // drag
+        let drag=null; el.onmousedown=(ev)=>{ const rect=area.getBoundingClientRect(); const dur=hm2m(b.end)-hm2m(b.start); const off=ev.clientY-(rect.top+((hm2m(b.start)-dayStart)/(dayEnd-dayStart))*gridH); drag={id:b.id,dur,off}; document.onmousemove=(e)=>{if(!drag)return; drag.y=e.clientY}; document.onmouseup=()=>{ if(!drag){clean();return;} const rect2=area.getBoundingClientRect(); let y=Math.max(0, Math.min(gridH-10, drag.y-rect2.top-drag.off)); const ratio=y/gridH; const startRaw=dayStart+Math.round((ratio*(dayEnd-dayStart))/step)*step; const endMin=Math.min(dayEnd,startRaw+drag.dur); const startMin=Math.max(dayStart,endMin-drag.dur); updateBooking({id:b.id,start:m2hm(startMin),end:m2hm(endMin)}); clean(); }; function clean(){document.onmousemove=null;document.onmouseup=null;drag=null;} };
+      });
     });
-  });
-
-  host.appendChild(shell);
-}
-
-/* ====== Редактирование брони ====== */
-function openEdit(id){
-  const b=state.bookings.find(x=>x.id===id); if(!b) return;
-  const dlg=document.createElement('div'); dlg.className='modal';
-  dlg.innerHTML=`<div>
-    <div class="row" style="justify-content:space-between"><strong>Редактирование</strong><button class="btn" id="close">Закрыть</button></div>
-    <div class="hr"></div>
-    <div class="row">
-      <div class="field"><span class="label">Комната</span>
-        <select id="er">${state.rooms.map(r=>`<option value="${r.id}" ${r.id===b.roomId?'selected':''}>${r.name}</option>`).join('')}</select>
-      </div>
-      <div class="field"><span class="label">Название</span><input id="et" value="${b.title}"></div>
-      <div class="field"><span class="label">Дата</span><input id="ed" type="date" value="${b.date}"></div>
-      <div class="field"><span class="label">Начало</span><input id="es" type="time" step="${state.settings.step*60}" value="${b.start}"></div>
-      <div class="field"><span class="label">Окончание</span><input id="ee" type="time" step="${state.settings.step*60}" value="${b.end}"></div>
-      <div class="field" style="margin-left:auto"><span class="label">&nbsp;</span>
-        <button class="btn" id="del">Удалить</button> <button class="btn btnAccent" id="ok">Сохранить</button>
-      </div>
-    </div>
-  </div>`;
-  document.body.appendChild(dlg);
-  dlg.querySelector('#close').onclick=()=>dlg.remove();
-  dlg.querySelector('#del').onclick=()=>{ state.bookings=state.bookings.filter(x=>x.id!==id); save(); renderList(); renderCalendar(); dlg.remove(); }
-  dlg.querySelector('#ok').onclick=()=>{
-    const next={ id, roomId:dlg.querySelector('#er').value, title:dlg.querySelector('#et').value, date:dlg.querySelector('#ed').value, start:dlg.querySelector('#es').value, end:dlg.querySelector('#ee').value };
-    const hit=state.bookings.filter(x=>x.id!==id).find(x=>conflicts(x,next));
-    if(hit){ toast('Пересечение: '+hit.title); return; }
-    state.bookings=state.bookings.map(x=>x.id===id?{...x,...next}:x); save(); renderList(); renderCalendar(); dlg.remove();
   }
-}
 
-/* ====== PIN-авторизация + админка ====== */
-document.getElementById('btnAuth').onclick=()=>{
-  const m=document.createElement('div'); m.className='modal';
-  m.innerHTML=`<div style="max-width:480px">
-    <div class="row" style="justify-content:space-between"><strong>Авторизация</strong><button class="btn" id="x">Закрыть</button></div>
-    <div class="hr"></div>
-    <div class="field"><span class="label">PIN</span><input id="pin" inputmode="numeric" placeholder="Введите PIN"></div>
-    <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn btnAccent" id="ok">Войти</button></div>
-    ${isAdmin()?`<div class="hr"></div><div class="row"><button id="admin" class="btn">Открыть админ-панель</button></div>`:''}
-  </div>`;
-  document.body.appendChild(m);
-  m.querySelector('#x').onclick=()=>m.remove();
-  m.querySelector('#ok').onclick=()=>{
-    const v=m.querySelector('#pin').value.trim();
-    if(v===state.pins.admin){ state.role='admin'; save(); toast('Роль: админ'); document.getElementById('roleHint').textContent='Роль: Админ'; }
-    else if(v===state.pins.user){ state.role='user'; save(); toast('Роль: пользователь'); document.getElementById('roleHint').textContent='Роль: Пользователь'; }
-    else toast('Неверный PIN');
-    m.remove();
-  };
-  if(isAdmin()) m.querySelector('#admin').onclick=()=>{ m.remove(); openAdmin(); };
-};
+  function openEdit(id){
+    const b=state.bookings.find(x=>x.id===id); if(!b) return;
+    const m=document.createElement('div'); m.className='fixed inset-0 bg-black/70 grid place-items-center p-4 z-50';
+    m.innerHTML=`<div class="card rounded-2xl p-4 w-full max-w-md grid gap-3">
+      <div class="text-lg font-semibold">Редактирование</div>
+      <div class="field"><div class="label">Переговорная</div><select id="er">${state.rooms.map(r=>`<option value="${r.id}" ${r.id===b.roomId?'selected':''}>${r.name}</option>`).join('')}</select></div>
+      <div class="field"><div class="label">Название</div><input id="et" value="${b.title}"></div>
+      <div class="row"><div class="field"><div class="label">Дата</div><input id="ed" type="date" value="${b.date}"></div><div class="field"><div class="label">Начало</div><input id="es" type="time" value="${b.start}"></div><div class="field"><div class="label">Окончание</div><input id="ee" type="time" value="${b.end}"></div></div>
+      <div class="row justify-end"><button class="btnGhost" id="del">Удалить</button><button class="btn" id="ok">Сохранить</button></div>
+    </div>`; document.body.appendChild(m);
+    m.querySelector('#del').onclick=()=>{removeBooking(id); m.remove();};
+    m.querySelector('#ok').onclick=()=>{updateBooking({id,roomId:m.querySelector('#er').value,title:m.querySelector('#et').value,date:m.querySelector('#ed').value,start:m.querySelector('#es').value,end:m.querySelector('#ee').value}); m.remove();};
+    m.onclick=(e)=>{if(e.target===m)m.remove()};
+  }
 
-function openAdmin(){
-  const cfg={...state.settings}; const pins={...state.pins}; const rooms=state.rooms.map(r=>({...r}));
-  const d=document.createElement('div'); d.className='modal';
-  d.innerHTML=`<div>
-    <div class="row" style="justify-content:space-between"><strong>Админ-панель</strong><button class="btn" id="x">Закрыть</button></div>
-    <div class="hr"></div>
-    <div class="row">
-      <div class="card" style="flex:1;min-width:280px">
-        <div class="row" style="justify-content:space-between"><strong>PIN-коды</strong></div>
-        <div class="row" style="margin-top:8px">
-          <div class="field"><span class="label">Админ</span><input id="pa" value="${pins.admin}"></div>
-          <div class="field"><span class="label">Пользователь</span><input id="pu" value="${pins.user}"></div>
-        </div>
-        <div class="hr"></div>
-        <strong>Настройки</strong>
-        <div class="row" style="margin-top:8px">
-          <div class="field"><span class="label">Начало дня</span><input id="ws" type="time" value="${cfg.workStart}"></div>
-          <div class="field"><span class="label">Конец дня</span><input id="we" type="time" value="${cfg.workEnd}"></div>
-          <div class="field"><span class="label">Шаг (мин)</span>
-            <select id="step"><option ${cfg.step==15?'selected':''}>15</option><option ${cfg.step==30?'selected':''}>30</option><option ${cfg.step==60?'selected':''}>60</option></select>
-          </div>
-          <div class="field"><span class="label">Буфер ДО</span><input id="bb" type="number" value="${cfg.bufferBefore}"></div>
-          <div class="field"><span class="label">Буфер ПОСЛЕ</span><input id="ba" type="number" value="${cfg.bufferAfter}"></div>
-          <div class="field"><span class="label">Окно чек-ина (мин)</span><input id="cw" type="number" value="${cfg.checkinWindow}"></div>
-        </div>
-      </div>
-      <div class="card" style="flex:1;min-width:320px">
-        <div class="row" style="justify-content:space-between"><strong>Комнаты</strong><button class="btn" id="addR">Добавить</button></div>
-        <div id="rl" style="margin-top:8px"></div>
-      </div>
-    </div>
-    <div class="hr"></div>
-    <div class="row" style="justify-content:flex-end">
-      <button class="btn" id="cancel">Отмена</button>
-      <button class="btn btnAccent" id="save">Сохранить</button>
-    </div>
-  </div>`;
-  document.body.appendChild(d);
-  const drawRooms=()=> d.querySelector('#rl').innerHTML = rooms.map(r=>`
-    <div class="row" style="border:1px solid var(--border);border-radius:10px;padding:8px;margin-bottom:8px">
-      <input data-id="${r.id}" data-k="name" value="${r.name}" style="flex:1">
-      <input data-id="${r.id}" data-k="capacity" type="number" value="${r.capacity}" style="width:90px">
-      <button class="btn" data-del="${r.id}">Удалить</button>
-    </div>`).join('');
-  drawRooms();
-  d.querySelector('#rl').addEventListener('input',e=>{
-    const id=e.target.dataset.id, k=e.target.dataset.k; const rr=rooms.find(x=>x.id===id); if(rr){ rr[k]= k==='capacity'?Number(e.target.value):e.target.value; }
-  });
-  d.querySelector('#rl').addEventListener('click',e=>{
-    if(e.target.dataset.del){ const id=e.target.dataset.del; const i=rooms.findIndex(x=>x.id===id); if(i>-1) rooms.splice(i,1); drawRooms(); }
-  });
-  d.querySelector('#addR').onclick=()=>{ rooms.push({id:uid(),name:'Новая переговорная',capacity:4}); drawRooms(); };
-  d.querySelector('#x').onclick=()=>d.remove();
-  d.querySelector('#cancel').onclick=()=>d.remove();
-  d.querySelector('#save').onclick=()=>{
-    state.pins={admin:d.querySelector('#pa').value||'0404', user:d.querySelector('#pu').value||'0000'};
-    state.settings={ workStart:d.querySelector('#ws').value, workEnd:d.querySelector('#we').value, step:Number(d.querySelector('#step').value),
-      bufferBefore:Number(d.querySelector('#bb').value||0), bufferAfter:Number(d.querySelector('#ba').value||0), checkinWindow:Number(d.querySelector('#cw').value||15), requireCheckin:true };
-    state.rooms=rooms; save(); renderRooms(); renderCalendar(); toast('Сохранено'); d.remove();
-  };
-}
+  function openAuth(){
+    const m=document.createElement('div'); m.className='fixed inset-0 bg-black/70 grid place-items-center p-4 z-50';
+    m.innerHTML=`<div class="card rounded-2xl p-4 w-full max-w-sm grid gap-3"><div class="text-lg font-semibold">Авторизация по PIN</div><input id="pin" class="field" inputmode="numeric" maxlength="8" placeholder="Введите PIN"/><div class="row justify-end"><button class="btn" id="ok">Войти</button></div></div>`; document.body.appendChild(m);
+    m.querySelector('#ok').onclick=()=>{const v=m.querySelector('#pin').value; if(v===state.pins.admin) state.role='admin'; else if(v===state.pins.user) state.role='user'; else alert('Неверный PIN'); save(); renderAll(); m.remove();};
+    m.onclick=(e)=>{if(e.target===m)m.remove()};
+  }
 
-/* sync в бота */
-document.getElementById('sync').onclick=()=>{
-  try{
-    tg?.sendData ? (tg.sendData(JSON.stringify({type:'sync_calendar',bookings:state.bookings})), toast('Отправлено в бота')) : toast('Telegram API недоступен');
-  }catch(e){ toast('Ошибка: '+e.message); }
-};
+  function toast(msg){ try{ if(tg?.showPopup){ tg.showPopup({title:'Roomie+',message:String(msg),buttons:[{type:'ok'}]}); return;} }catch(_){ } alert(msg); }
 
-/* стартовый рендер */
-renderRooms(); renderList(); renderCalendar();
-</script>
+  function renderAll(){ renderRooms(); renderList(); renderCalendar(); }
+  renderAll();
+  </script>
 </body>
 </html>
