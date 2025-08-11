@@ -2,122 +2,257 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Бронирование переговорных</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Бронирование переговорных — Прайм Самолет Плюс</title>
 <style>
-  body { font-family: sans-serif; background: #1a1a1a; color: #fff; padding: 20px; }
-  .card { background: #2a2a2a; border-radius: 8px; padding: 20px; max-width: 400px; margin: auto; }
-  label { display: block; margin-top: 10px; font-size: 14px; color: #ccc; }
-  input, button { width: 100%; padding: 8px; border-radius: 4px; border: none; font-size: 14px; }
-  input[type="time"] { background: #333; color: #fff; }
-  button { background: #444; color: #fff; cursor: pointer; }
-  button:hover { background: #666; }
-  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
-  .modal-content { background: #2a2a2a; padding: 20px; border-radius: 8px; width: 300px; }
-  .dur-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .dur-grid button { background: #555; }
-  .dur-grid button:hover { background: #777; }
+    body {
+        font-family: Arial, sans-serif;
+        background: #1e1e1e;
+        color: #f1f1f1;
+        margin: 0;
+        padding: 0;
+    }
+    header {
+        display: flex;
+        align-items: center;
+        background: #111;
+        padding: 10px 20px;
+    }
+    header svg {
+        height: 40px;
+        margin-right: 10px;
+    }
+    h1 {
+        font-size: 1.4rem;
+        margin: 0;
+    }
+    .calendar-nav {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        background: #222;
+    }
+    .calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 5px;
+        padding: 10px;
+    }
+    .day {
+        background: rgba(255,255,255,0.05);
+        padding: 15px;
+        text-align: center;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    .day:hover {
+        background: rgba(255,255,255,0.1);
+    }
+    button {
+        background: #333;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    button:hover {
+        background: #555;
+    }
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8);
+        justify-content: center;
+        align-items: center;
+    }
+    .modal-content {
+        background: #2a2a2a;
+        padding: 20px;
+        border-radius: 8px;
+        width: 300px;
+    }
+    input, select {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0;
+        border-radius: 4px;
+        border: none;
+    }
+    .bookings {
+        padding: 10px;
+    }
+    .booking {
+        background: rgba(255,255,255,0.05);
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 5px;
+        display: flex;
+        justify-content: space-between;
+    }
 </style>
 </head>
 <body>
 
-<div class="card">
-  <h2>Бронирование переговорной</h2>
+<header>
+    <!-- Лого Прайм Самолет Плюс (SVG) -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40">
+        <rect width="200" height="40" fill="#fff"/>
+        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="20" fill="#000">
+            Прайм Самолет Плюс
+        </text>
+    </svg>
+    <h1>Бронирование переговорных</h1>
+</header>
 
-  <label>Начало</label>
-  <input id="f_start" type="time" value="10:00">
-
-  <label>Длительность</label>
-  <button id="durBtn" type="button"><span id="durLabel">60 мин</span></button>
-  <input id="f_dur" type="hidden" value="60">
-
-  <label>Окончание</label>
-  <input id="f_end" type="time" value="11:00">
-
-  <button style="margin-top:15px;">Создать бронь</button>
+<div class="calendar-nav">
+    <button id="prevMonth">◀</button>
+    <div id="monthYear"></div>
+    <button id="nextMonth">▶</button>
 </div>
 
-<!-- Модальное окно выбора длительности -->
-<div id="durModal" class="modal">
-  <div class="modal-content">
-    <h3>Выберите длительность</h3>
-    <div class="dur-grid">
-      <button data-min="30">30 мин</button>
-      <button data-min="60">1 час</button>
-      <button data-min="90">1,5 часа</button>
-      <button data-min="120">2 часа</button>
-      <button data-min="150">2,5 часа</button>
-      <button data-min="180">3 часа</button>
+<div class="calendar" id="calendar"></div>
+
+<div style="padding:10px; text-align:center;">
+    <button id="createBooking">Создать бронь</button>
+    <button id="myBookingsBtn">Мои брони</button>
+</div>
+
+<div class="bookings" id="bookingsList"></div>
+
+<!-- Модальное окно -->
+<div class="modal" id="bookingModal">
+    <div class="modal-content">
+        <h3>Новая бронь</h3>
+        <input type="text" id="fio" placeholder="ФИО брокера">
+        <select id="room">
+            <option value="Переговорка 1">Переговорка 1</option>
+            <option value="Переговорка 2">Переговорка 2</option>
+            <option value="Переговорка 3">Переговорка 3</option>
+        </select>
+        <label>Дата</label>
+        <input type="date" id="date">
+        <label>Время начала</label>
+        <input type="time" id="startTime" min="09:00" max="20:00">
+        <label>Длительность</label>
+        <select id="duration">
+            <option value="30">30 минут</option>
+            <option value="60">1 час</option>
+            <option value="90">1.5 часа</option>
+            <option value="120">2 часа</option>
+        </select>
+        <div style="margin-top:10px; text-align:right;">
+            <button id="saveBooking">Сохранить</button>
+            <button id="closeModal">Отмена</button>
+        </div>
     </div>
-    <button id="durClose" style="margin-top:10px;background:#444;">Закрыть</button>
-  </div>
 </div>
 
 <script>
-const $f = {
-  start: document.getElementById('f_start'),
-  end: document.getElementById('f_end'),
-  dur: document.getElementById('f_dur')
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
+let myName = localStorage.getItem("myName") || "";
+
+function renderCalendar(month, year) {
+    const monthYear = document.getElementById("monthYear");
+    monthYear.textContent = new Date(year, month).toLocaleString('ru', { month: 'long', year: 'numeric' });
+    const calendar = document.getElementById("calendar");
+    calendar.innerHTML = "";
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month+1, 0).getDate();
+    const startDay = firstDay === 0 ? 6 : firstDay - 1;
+
+    for (let i=0; i<startDay; i++) {
+        const empty = document.createElement("div");
+        calendar.appendChild(empty);
+    }
+
+    for (let d=1; d<=daysInMonth; d++) {
+        const day = document.createElement("div");
+        day.className = "day";
+        day.textContent = d;
+        day.addEventListener("click", () => showBookings(d, month, year));
+        calendar.appendChild(day);
+    }
+}
+
+function showBookings(day, month, year) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const list = document.getElementById("bookingsList");
+    list.innerHTML = `<h3 style="text-align:center;">Брони на ${dateStr}</h3>`;
+    bookings.filter(b => b.date === dateStr).forEach((b,i) => {
+        const div = document.createElement("div");
+        div.className = "booking";
+        div.innerHTML = `<div>${b.time} — ${b.room} (${b.fio})</div>
+                         <button onclick="deleteBooking(${i})">Удалить</button>`;
+        list.appendChild(div);
+    });
+}
+
+function deleteBooking(index) {
+    if (bookings[index].fio === myName || myName === "admin") {
+        bookings.splice(index,1);
+        localStorage.setItem("bookings", JSON.stringify(bookings));
+        document.getElementById("bookingsList").innerHTML = "";
+        renderCalendar(currentMonth, currentYear);
+    } else {
+        alert("Вы не можете удалить эту бронь");
+    }
+}
+
+document.getElementById("prevMonth").onclick = () => {
+    currentMonth--;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    renderCalendar(currentMonth, currentYear);
 };
-const $durBtn   = document.getElementById('durBtn');
-const $durLabel = document.getElementById('durLabel');
-const $durModal = document.getElementById('durModal');
-const $durClose = document.getElementById('durClose');
+document.getElementById("nextMonth").onclick = () => {
+    currentMonth++;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    renderCalendar(currentMonth, currentYear);
+};
 
-function hm2m(hm) {
-  const [h, m] = hm.split(':').map(Number);
-  return h * 60 + m;
-}
-function m2hm(m) {
-  const h = Math.floor(m / 60);
-  const mm = String(m % 60).padStart(2, '0');
-  return `${String(h).padStart(2, '0')}:${mm}`;
-}
-function workStartMin(){ return 9 * 60; } // 09:00
-function workEndMin(){   return 20 * 60; } // 20:00
+document.getElementById("createBooking").onclick = () => {
+    document.getElementById("bookingModal").style.display = "flex";
+};
+document.getElementById("closeModal").onclick = () => {
+    document.getElementById("bookingModal").style.display = "none";
+};
 
-function updateEndFromDur(){
-  const startMin = hm2m($f.start.value);
-  const durMin   = parseInt($f.dur.value || '60', 10);
-  let endMin = startMin + durMin;
-  endMin = Math.min(endMin, workEndMin());
-  if (endMin - startMin < durMin){
-    const newStart = Math.max(workStartMin(), endMin - durMin);
-    $f.start.value = m2hm(newStart);
-  }
-  $f.end.value = m2hm(endMin);
-}
+document.getElementById("saveBooking").onclick = () => {
+    const fio = document.getElementById("fio").value.trim();
+    const room = document.getElementById("room").value;
+    const date = document.getElementById("date").value;
+    const startTime = document.getElementById("startTime").value;
+    const duration = parseInt(document.getElementById("duration").value);
+    if (!fio || !date || !startTime) return alert("Заполните все поля");
+    myName = fio;
+    localStorage.setItem("myName", fio);
+    const start = new Date(`${date}T${startTime}`);
+    const end = new Date(start.getTime() + duration * 60000);
+    const endTime = end.toTimeString().slice(0,5);
+    bookings.push({ fio, room, date, time: `${startTime}-${endTime}` });
+    localStorage.setItem("bookings", JSON.stringify(bookings));
+    document.getElementById("bookingModal").style.display = "none";
+    renderCalendar(currentMonth, currentYear);
+};
 
-function openDur(){ $durModal.style.display = 'flex'; }
-function closeDur(){ $durModal.style.display = 'none'; }
+document.getElementById("myBookingsBtn").onclick = () => {
+    const list = document.getElementById("bookingsList");
+    list.innerHTML = `<h3 style="text-align:center;">Мои брони</h3>`;
+    bookings.filter(b => b.fio === myName).forEach((b,i) => {
+        const div = document.createElement("div");
+        div.className = "booking";
+        div.innerHTML = `<div>${b.date} ${b.time} — ${b.room}</div>
+                         <button onclick="deleteBooking(${i})">Удалить</button>`;
+        list.appendChild(div);
+    });
+};
 
-$durModal.addEventListener('click', (e)=>{
-  const btn = e.target.closest('[data-min]');
-  if(!btn) return;
-  const m = parseInt(btn.dataset.min, 10);
-  $f.dur.value = String(m);
-  $durLabel.textContent = btn.textContent.trim();
-  updateEndFromDur();
-  closeDur();
-});
-$durClose.addEventListener('click', closeDur);
-$durBtn.addEventListener('click', openDur);
-$f.start.addEventListener('change', updateEndFromDur);
-$f.end.addEventListener('change', ()=>{
-  const dur = hm2m($f.end.value) - hm2m($f.start.value);
-  if (dur > 0){
-    $f.dur.value = String(dur);
-    const rounded = Math.round(dur/30)*30;
-    const text = rounded===30 ? '30 мин'
-               : rounded===60 ? '1 час'
-               : rounded===90 ? '1,5 часа'
-               : `${Math.round(rounded/60*10)/10} ч`;
-    $durLabel.textContent = text;
-  }
-});
-if (!$f.dur.value) $f.dur.value = '60';
-$durLabel.textContent = '60 мин';
-updateEndFromDur();
+renderCalendar(currentMonth, currentYear);
 </script>
 
 </body>
