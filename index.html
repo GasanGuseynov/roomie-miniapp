@@ -1,284 +1,442 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Roomie+ — Прайм Самолёт Плюс</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    :root{--bg:#0b0b0d;--panel:#131316;--muted:#9ca3af;--border:#26272b}
-    html,body,#app{height:100%}
-    body{background:var(--bg);color:#e5e7eb}
-    .card{background:var(--panel);border:1px solid var(--border)}
-    .row{display:flex;gap:.75rem;align-items:center}
-    .btn{background:#e5e7eb;color:#111827;border-radius:.75rem;padding:.5rem .75rem;font-size:.9rem}
-    .btnGhost{background:rgba(255,255,255,.06);border:1px solid var(--border);color:#e5e7eb;border-radius:.75rem;padding:.5rem .75rem}
-    .label{font-size:.75rem;color:var(--muted)}
-    .field input,.field select{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:.75rem;padding:.5rem .75rem;min-height:40px}
-    .noselect{-webkit-user-select:none;user-select:none}
-    .badge{font-size:.7rem;padding:.15rem .5rem;border-radius:9999px;border:1px solid var(--border);background:rgba(255,255,255,.06)}
-    .badgeOK{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4)}
-    .badgeAwait{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.4)}
-    .badgeNo{background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.4)}
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Roomie+ — Прайм Самолёт Плюс</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{--bg:#0b0b0d;--panel:#141416;--muted:#98a2b3;--border:#24262a;--accent:#e5e7eb}
+  html,body,#app{height:100%}
+  body{background:var(--bg);color:#e5e7eb}
+  .card{background:var(--panel);border:1px solid var(--border)}
+  .btn{background:var(--accent);color:#0b0b0d;border-radius:.8rem;padding:.6rem .9rem;font-weight:600}
+  .btnGhost{background:rgba(255,255,255,.06);border:1px solid var(--border);color:#e5e7eb;border-radius:.8rem;padding:.55rem .85rem}
+  .label{font-size:.8rem;color:var(--muted)}
+  .fld{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:.8rem;padding:.6rem .8rem;min-height:42px}
+  .fld:focus{outline:2px solid #3b82f6;outline-offset:0}
+  /* читаемый тёмный date/time */
+  input[type="date"],input[type="time"]{color-scheme:dark}
+  .k-badge{font-size:.7rem;padding:.15rem .5rem;border-radius:9999px;border:1px solid var(--border);background:rgba(255,255,255,.06)}
+  .k-ok{background:rgba(16,185,129,.14);border-color:rgba(16,185,129,.4)}
+  .k-wait{background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.4)}
+  .k-no{background:rgba(244,63,94,.14);border-color:rgba(244,63,94,.4)}
+  .noselect{-webkit-user-select:none;user-select:none}
+</style>
 </head>
 <body>
-  <div id="app" class="min-h-full">
-    <header class="card rounded-2xl max-w-6xl mx-auto mt-3 mb-3 px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <img src="logo.png" class="h-8 w-8 rounded" onerror="this.style.display='none'"/>
-        <div class="text-xl font-extrabold tracking-tight">прайм самолёт <span class="px-2 py-0.5 rounded bg-white text-black ml-1">плюс</span></div>
+<div id="app" class="min-h-full">
+  <header class="card rounded-2xl max-w-6xl mx-auto mt-3 mb-3 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <img src="logo.png" class="h-8 w-8 rounded" onerror="this.style.display='none'"/>
+      <div class="text-xl font-extrabold tracking-tight">прайм самолёт
+        <span class="px-2 py-0.5 rounded bg-white text-black ml-1">плюс</span>
       </div>
+    </div>
+    <div class="flex items-center gap-3">
       <div id="wa" class="text-sm text-gray-400">Telegram WebApp: —</div>
+      <span id="role" class="text-sm text-gray-400 hidden sm:inline"></span>
+      <button id="btnAdminPanel" class="btnGhost hidden">Админ-панель</button>
       <button id="auth" class="btn">Войти по PIN</button>
-    </header>
+    </div>
+  </header>
 
-    <main class="max-w-6xl mx-auto grid gap-4 px-3">
-      <!-- Панель бронирования -->
-      <section class="card rounded-2xl p-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div class="field">
-            <div class="label">Дата</div>
-            <input type="date" id="date">
-          </div>
-          <div class="field">
-            <div class="label">Начало</div>
-            <input type="time" id="start" step="900" value="10:00">
-          </div>
-          <div class="field">
-            <div class="label">ФИО бронирующего</div>
-            <input id="person" placeholder="Иванов Иван">
-          </div>
-          <div class="field">
-            <div class="label">Название</div>
-            <input id="title" placeholder="Например: Синк по проекту">
-          </div>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-          <div class="field">
-            <div class="label">Повтор</div>
-            <select id="repeat"><option value="none">Без повтора</option><option value="daily">Каждый день</option><option value="weekly">Каждую неделю</option></select>
-          </div>
-          <div class="field">
-            <div class="label">Кол-во</div>
-            <select id="count">
-              <option>1</option><option>2</option><option>3</option><option>5</option><option>10</option>
-            </select>
-          </div>
-          <div class="flex items-end justify-end"><button id="sync" class="btn">Синхронизировать</button></div>
-        </div>
-      </section>
-
-      <!-- Список переговорных -->
-      <section class="card rounded-2xl p-4">
-        <div class="flex items-center justify-between mb-2"><h2 class="text-lg font-semibold">Выберите переговорную</h2><div class="text-xs text-gray-400" id="roomsCount"></div></div>
-        <div id="rooms" class="grid gap-3"></div>
-      </section>
-
-      <!-- Календарь дня -->
-      <section class="card rounded-2xl p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold">Календарь дня</h2>
-          <div class="text-xs text-gray-400" id="roleBox">Роль: Пользователь</div>
-        </div>
-        <div id="cal"></div>
-      </section>
-
-      <!-- Мои брони -->
-      <section class="card rounded-2xl p-4">
-        <div class="flex items-center justify-between mb-2"><h2 class="text-lg font-semibold">Мои брони</h2>
-          <a id="csvLink" class="btnGhost" download="bookings.csv">CSV</a>
-        </div>
-        <div id="list"></div>
-      </section>
-    </main>
-  </div>
-
-  <script>
-  const tg=(window.Telegram&&window.Telegram.WebApp)||null;try{tg&&tg.ready()}catch(_){}
-  const LS='roomie_v3';
-  const uid=()=>Math.random().toString(36).slice(2,10);
-  const hm2m=(s)=>{const[a,b]=String(s||'00:00').split(':').map(Number);return (a||0)*60+(b||0)};
-  const m2hm=(m)=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
-  const toISO=(d)=>new Date(d).toISOString().slice(0,10);
-  const todayISO=()=>toISO(new Date());
-
-  const defaultState={
-    role:'user', pins:{admin:'0404',user:'0000'},
-    settings:{workStart:'09:00',workEnd:'20:00',step:30,bufferBefore:0,bufferAfter:0},
-    rooms:[{id:'r1',name:'Переговорная №1',capacity:6},{id:'r2',name:'Переговорная №2',capacity:10},{id:'r3',name:'Zoom-капсула',capacity:2}],
-    bookings:[], __calDate:null
-  };
-  let state=load();
-  function load(){try{return JSON.parse(localStorage.getItem(LS))||structuredClone(defaultState)}catch{return structuredClone(defaultState)}}
-  function save(){localStorage.setItem(LS,JSON.stringify(state))}
-  const isAdmin=()=>state.role==='admin';
-
-  // UI refs
-  const $date=document.getElementById('date');
-  const $start=document.getElementById('start');
-  const $title=document.getElementById('title');
-  const $person=document.getElementById('person');
-  const $repeat=document.getElementById('repeat');
-  const $count=document.getElementById('count');
-  const $rooms=document.getElementById('rooms');
-  const $roomsCount=document.getElementById('roomsCount');
-  const $list=document.getElementById('list');
-  const $cal=document.getElementById('cal');
-  const $wa=document.getElementById('wa');
-  const $roleBox=document.getElementById('roleBox');
-
-  // init
-  $date.value = todayISO();
-  $wa.textContent = `Telegram WebApp: ${tg?'ok':'—'}`;
-  document.getElementById('auth').onclick=openAuth;
-  document.getElementById('sync').onclick=()=>{try{tg?.sendData&&tg.sendData(JSON.stringify({type:'sync_calendar',bookings:state.bookings}))}catch(_){}};
-
-  // Rooms list
-  function renderRooms(){
-    $roomsCount.textContent = `${state.rooms.length} шт.`;
-    $rooms.innerHTML = state.rooms.map(r=>`
-      <div class="card rounded-xl p-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="font-semibold">${r.name}</div>
-            <div class="text-xs text-gray-400">${r.capacity} мест</div>
-          </div>
-          <div class="row">
-            ${[30,60,90,120].map(m=>`<button class="btnGhost" data-room="${r.id}" data-min="${m}">${m===30?'30 мин':m===60?'1 час':m===90?'1,5 часа':'2 часа'}</button>`).join('')}
-          </div>
+  <main class="max-w-6xl mx-auto grid gap-4 px-3">
+    <!-- Панель параметров -->
+    <section class="card rounded-2xl p-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <label class="grid gap-1">
+          <span class="label">Дата</span>
+          <input id="date" type="date" class="fld">
+        </label>
+        <label class="grid gap-1">
+          <span class="label">Начало</span>
+          <input id="start" type="time" step="900" value="10:00" class="fld">
+        </label>
+        <label class="grid gap-1">
+          <span class="label">ФИО бронирующего</span>
+          <input id="person" placeholder="Иванов Иван" class="fld">
+        </label>
+        <label class="grid gap-1">
+          <span class="label">Название</span>
+          <input id="title" placeholder="Например: Синк по проекту" class="fld">
+        </label>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+        <label class="grid gap-1">
+          <span class="label">Повтор</span>
+          <select id="repeat" class="fld">
+            <option value="none">Без повтора</option>
+            <option value="daily">Каждый день</option>
+            <option value="weekly">Каждую неделю</option>
+          </select>
+        </label>
+        <label class="grid gap-1">
+          <span class="label">Кол-во</span>
+          <select id="count" class="fld">
+            <option>1</option><option>2</option><option>3</option><option>5</option><option>10</option>
+          </select>
+        </label>
+        <div class="flex items-end justify-end">
+          <button id="openCreate" class="btn">Создать бронь</button>
         </div>
       </div>
-    `).join('');
-    $rooms.querySelectorAll('[data-room]').forEach(b=> b.onclick=()=> createBooking(b.dataset.room, Number(b.dataset.min)));
-  }
+    </section>
 
-  function expandRecurring(base){
-    const out=[]; const cnt=Number($count.value||1); const rep=$repeat.value;
-    const d0=new Date(base.date+'T00:00:00');
-    for(let i=0;i<cnt;i++){
-      const d=new Date(d0);
-      if(rep==='daily') d.setDate(d.getDate()+i);
-      else if(rep==='weekly') d.setDate(d.getDate()+7*i);
-      out.push({...base,date:toISO(d)});
-    }
-    return out;
-  }
+    <!-- Список переговорных -->
+    <section class="card rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-semibold">Переговорные</h2>
+        <div id="roomsCount" class="text-xs text-gray-400"></div>
+      </div>
+      <div id="rooms" class="grid gap-3"></div>
+    </section>
 
-  function conflicts(a,b){
-    if(a.roomId!==b.roomId || a.date!==b.date) return false;
-    const bb=Number(state.settings.bufferBefore||0), ba=Number(state.settings.bufferAfter||0);
-    const aS=hm2m(a.start)-bb, aE=hm2m(a.end)+ba, bS=hm2m(b.start)-bb, bE=hm2m(b.end)+ba;
-    return aS<bE && bS<aE;
-  }
+    <!-- Календарь дня -->
+    <section class="card rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">Календарь дня</h2>
+        <div class="text-xs text-gray-400" id="roleBox">Роль: Пользователь</div>
+      </div>
+      <div id="cal"></div>
+    </section>
 
-  function createBooking(roomId, minutes){
-    const title=($title.value||'Бронь').trim();
-    const date=$date.value; const start=$start.value||'10:00'; const end=m2hm(hm2m(start)+minutes);
-    const whoField=($person.value||'').trim();
-    const who = whoField || tg?.initDataUnsafe?.user?.username || 'you';
-    const base={id:uid(),roomId,title,date,start,end,who,status:'scheduled'};
-    const list=expandRecurring(base);
-    for(const x of list){ const hit=state.bookings.find(b=>conflicts(b,x)); if(hit){ toast(`Пересечение с «${hit.title}» (${hit.start}–${hit.end})`); return; } }
-    state.bookings.push(...list); save(); renderAll(); toast('Бронь создана');
-    try{tg?.sendData&&tg.sendData(JSON.stringify({type:'booking_created',data:list}))}catch(_){}
-  }
+    <!-- Мои брони -->
+    <section class="card rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-semibold">Мои брони</h2>
+      </div>
+      <div id="list"></div>
+    </section>
+  </main>
+</div>
 
-  function removeBooking(id){ state.bookings = state.bookings.filter(b=>b.id!==id); save(); renderAll(); }
+<!-- Модалки -->
+<div id="modalRoot"></div>
 
-  function updateBooking(p){ const i=state.bookings.findIndex(b=>b.id===p.id); if(i<0) return; const next={...state.bookings[i],...p};
-    if(state.bookings.some(b=>b.id!==next.id && conflicts(b,next))){ toast('Пересечение'); return; }
-    state.bookings[i]=next; save(); renderAll(); }
+<script>
+const tg=(window.Telegram&&window.Telegram.WebApp)||null; try{tg&&tg.ready()}catch(_){}
+const LS='roomie_v4';
+const uid=()=>Math.random().toString(36).slice(2,10);
+const hm2m=(s)=>{const[a,b]=String(s||'00:00').split(':').map(Number);return(a||0)*60+(b||0)}
+const m2hm=(m)=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`
+const toISO=(d)=>new Date(d).toISOString().slice(0,10)
+const todayISO=()=>toISO(new Date())
 
-  function renderList(){
-    const arr=[...state.bookings].sort((a,b)=> (a.date+a.start).localeCompare(b.date+b.start));
-    if(!arr.length){ $list.innerHTML='<div class="text-sm text-gray-400">Пока нет броней.</div>'; return; }
-    const icsHref=(b)=>{const dt=(d,t)=>d.replaceAll('-','')+'T'+t.replace(':','')+'00'; const ics=['BEGIN:VCALENDAR','VERSION:2.0','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+uid(),'DTSTAMP:'+dt(todayISO(), new Date().toTimeString().slice(0,5)),'DTSTART:'+dt(b.date,b.start),'DTEND:'+dt(b.date,b.end),'SUMMARY:'+b.title,'DESCRIPTION:'+ (state.rooms.find(r=>r.id===b.roomId)?.name||'Переговорная')+' — '+(b.who||''),'END:VEVENT','END:VCALENDAR'].join('\r\n'); return 'data:text/calendar;charset=utf-8,'+encodeURIComponent(ics) };
-    $list.innerHTML = arr.map(b=>`
-      <div class="flex items-center justify-between py-2 border-b border-[var(--border)]">
+const defaultState={
+  role:'user',
+  pins:{admin:'0404',user:'0000'},
+  settings:{workStart:'09:00',workEnd:'20:00',step:30,bufferBefore:0,bufferAfter:0},
+  rooms:[
+    {id:'r1',name:'Переговорная №1',capacity:6},
+    {id:'r2',name:'Переговорная №2',capacity:10},
+    {id:'r3',name:'Zoom-капсула',capacity:2},
+  ],
+  bookings:[],
+  __calDate:null
+};
+let state = load();
+function load(){try{return JSON.parse(localStorage.getItem(LS))||structuredClone(defaultState)}catch{return structuredClone(defaultState)}}
+function save(){localStorage.setItem(LS,JSON.stringify(state))}
+const isAdmin=()=>state.role==='admin';
+
+const $date=document.getElementById('date');
+const $start=document.getElementById('start');
+const $title=document.getElementById('title');
+const $person=document.getElementById('person');
+const $repeat=document.getElementById('repeat');
+const $count=document.getElementById('count');
+const $rooms=document.getElementById('rooms');
+const $roomsCount=document.getElementById('roomsCount');
+const $list=document.getElementById('list');
+const $cal=document.getElementById('cal');
+const $wa=document.getElementById('wa');
+const $role=document.getElementById('role');
+const $roleBox=document.getElementById('roleBox');
+const $btnAdminPanel=document.getElementById('btnAdminPanel');
+const $modalRoot=document.getElementById('modalRoot');
+
+$date.value=todayISO();
+$wa.textContent=`Telegram WebApp: ${tg?'ok':'—'}`;
+
+document.getElementById('auth').onclick=openAuth;
+document.getElementById('openCreate').onclick=openCreateModal;
+$btnAdminPanel.onclick=openAdmin;
+
+function renderRooms(){
+  $roomsCount.textContent=`${state.rooms.length} шт.`;
+  $rooms.innerHTML=state.rooms.map(r=>`
+    <div class="card rounded-xl p-3">
+      <div class="flex items-center justify-between">
         <div>
-          <div class="font-medium">${b.title} <span class="badge ${b.status==='checked-in'?'badgeOK':b.status==='awaiting'?'badgeAwait':b.status==='no-show'?'badgeNo':''}">${b.status||'—'}</span></div>
-          <div class="text-xs text-gray-400">${state.rooms.find(r=>r.id===b.roomId)?.name||'—'} · ${b.date} · ${b.start}–${b.end} · ${b.who||'—'}</div>
+          <div class="font-semibold">${r.name}</div>
+          <div class="text-xs text-gray-400">${r.capacity} мест</div>
         </div>
-        <div class="row">
-          <a class="btnGhost" download="booking-${b.id}.ics" href="${icsHref(b)}">ICS</a>
-          ${(isAdmin()||(tg?.initDataUnsafe?.user?.username)===b.who)?`<button class="btnGhost" data-del="${b.id}">Удалить</button>`:''}
-        </div>
-      </div>`).join('');
-    $list.querySelectorAll('[data-del]').forEach(x=> x.onclick=()=> removeBooking(x.dataset.del));
-    // CSV
-    const header=['title','room','date','start','end','who'];
-    const rows=arr.map(b=>[b.title,state.rooms.find(r=>r.id===b.roomId)?.name||b.roomId,b.date,b.start,b.end,b.who]);
-    const csv=[header,...rows].map(r=> r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\n');
-    document.getElementById('csvLink').href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+        <div class="text-xs text-gray-400">ID: ${r.id}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function expandRecurring(base){
+  const out=[]; const cnt=Number($count.value||1); const rep=$repeat.value;
+  const d0=new Date(base.date+'T00:00:00');
+  for(let i=0;i<cnt;i++){
+    const d=new Date(d0);
+    if(rep==='daily') d.setDate(d.getDate()+i);
+    else if(rep==='weekly') d.setDate(d.getDate()+7*i);
+    out.push({...base,date:toISO(d)});
   }
+  return out;
+}
+function conflicts(a,b){
+  if(a.roomId!==b.roomId||a.date!==b.date) return false;
+  const bb=Number(state.settings.bufferBefore||0),ba=Number(state.settings.bufferAfter||0);
+  const aS=hm2m(a.start)-bb,aE=hm2m(a.end)+ba,bS=hm2m(b.start)-bb,bE=hm2m(b.end)+ba;
+  return aS<bE && bS<aE;
+}
+function createBooking(roomId, minutes){
+  const title=($title.value||'Бронь').trim();
+  const date=$date.value||todayISO();
+  const start=$start.value||'10:00';
+  const end=m2hm(hm2m(start)+minutes);
+  const whoField=($person.value||'').trim();
+  const who = whoField || tg?.initDataUnsafe?.user?.username || 'you';
+  const base={id:uid(),roomId,title,date,start,end,who,status:'scheduled'};
+  const list=expandRecurring(base);
+  for(const x of list){ const hit=state.bookings.find(b=>conflicts(b,x)); if(hit){ toast(`Пересечение с «${hit.title}» (${hit.start}–${hit.end})`); return; } }
+  state.bookings.push(...list); save(); renderAll(); toast('Бронь создана');
+}
+function removeBooking(id){ state.bookings=state.bookings.filter(b=>b.id!==id); save(); renderAll(); }
+function updateBooking(p){ const i=state.bookings.findIndex(b=>b.id===p.id); if(i<0) return; const next={...state.bookings[i],...p};
+  if(state.bookings.some(b=>b.id!==next.id && conflicts(b,next))){ toast('Пересечение'); return; }
+  state.bookings[i]=next; save(); renderAll(); }
 
-  function renderCalendar(){
-    $roleBox.textContent = 'Роль: '+(isAdmin()?'Админ':'Пользователь');
-    $cal.innerHTML='';
-    const day = state.__calDate || $date.value || todayISO();
-    // Навигация дат
-    const nav=document.createElement('div'); nav.className='row mb-2';
-    nav.innerHTML = `<button class="btnGhost" id="prevD">←</button><input class="field" type="date" id="calDate" value="${day}"><button class="btnGhost" id="nextD">→</button>`;
-    $cal.appendChild(nav);
-    nav.querySelector('#prevD').onclick=()=>{const d=new Date(day+'T00:00:00'); d.setDate(d.getDate()-1); state.__calDate=toISO(d); renderCalendar();};
-    nav.querySelector('#nextD').onclick=()=>{const d=new Date(day+'T00:00:00'); d.setDate(d.getDate()+1); state.__calDate=toISO(d); renderCalendar();};
-    nav.querySelector('#calDate').onchange=(e)=>{state.__calDate=e.target.value; renderCalendar();};
+function renderList(){
+  const arr=[...state.bookings].sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
+  if(!arr.length){ $list.innerHTML='<div class="text-sm text-gray-400">Пока нет броней.</div>'; return; }
+  $list.innerHTML=arr.map(b=>`
+    <div class="flex items-center justify-between py-2 border-b" style="border-color:var(--border)">
+      <div>
+        <div class="font-medium">${b.title} <span class="k-badge ${b.status==='checked-in'?'k-ok':b.status==='awaiting'?'k-wait':b.status==='no-show'?'k-no':''}">${b.status||'—'}</span></div>
+        <div class="text-xs text-gray-400">${state.rooms.find(r=>r.id===b.roomId)?.name||'—'} · ${b.date} · ${b.start}–${b.end} · ${b.who||'—'}</div>
+      </div>
+      <div>
+        ${(isAdmin()||(tg?.initDataUnsafe?.user?.username)===b.who)?`<button class="btnGhost" data-del="${b.id}">Удалить</button>`:''}
+      </div>
+    </div>
+  `).join('');
+  $list.querySelectorAll('[data-del]').forEach(x=>x.onclick=()=>removeBooking(x.dataset.del));
+}
 
-    const dayStart=hm2m(state.settings.workStart), dayEnd=hm2m(state.settings.workEnd), step=Number(state.settings.step||30);
-    const slots=[]; for(let m=dayStart;m<=dayEnd;m+=60){ slots.push(m2hm(m)); }
-    const pxH=42, gridH=pxH*slots.length;
+function renderCalendar(){
+  $role.textContent=`Роль: ${isAdmin()?'Админ':'Пользователь'}`;
+  $roleBox.textContent=$role.textContent;
+  document.getElementById('btnAdminPanel').classList.toggle('hidden',!isAdmin());
 
-    const shell=document.createElement('div'); shell.className='grid'; shell.style.gridTemplateColumns='90px 1fr'; $cal.appendChild(shell);
-    const times=document.createElement('div'); times.innerHTML=slots.map(t=>`<div class="h-[42px] text-right pr-2 text-xs text-gray-500 border-b" style="border-color:var(--border)">${t}</div>`).join(''); shell.appendChild(times);
-    const area=document.createElement('div'); area.className='relative noselect'; area.style.height=gridH+'px'; area.style.background='rgba(255,255,255,.03)'; shell.appendChild(area);
-    slots.forEach(()=>{const r=document.createElement('div'); r.className='h-[42px] border-b'; r.style.borderColor='var(--border)'; area.appendChild(r);});
+  $cal.innerHTML='';
+  const day=state.__calDate || $date.value || todayISO();
 
-    state.rooms.forEach(room=>{
-      const list = state.bookings.filter(b=>b.roomId===room.id && b.date===day);
-      list.forEach(b=>{
-        const top=((hm2m(b.start)-dayStart)/(dayEnd-dayStart))*gridH;
-        const h=((hm2m(b.end)-hm2m(b.start))/(dayEnd-dayStart))*gridH;
-        const el=document.createElement('div');
-        const color = b.status==='checked-in'?'border-emerald-300/40 bg-emerald-400/15': b.status==='awaiting'?'border-amber-300/40 bg-amber-400/15': b.status==='no-show'?'border-rose-300/40 bg-rose-400/15':'border-indigo-300/40 bg-indigo-400/15';
-        el.className=`absolute left-24 right-3 ${color} border rounded-lg p-2 text-[12px] cursor-grab active:cursor-grabbing`;
-        el.style.top=top+'px'; el.style.height=Math.max(28,h)+'px';
-        el.innerHTML=`<div class="font-medium">${b.title}</div><div class="opacity-80 text-[11px]">${b.start}–${b.end} · ${room.name} · ${b.who||'—'}</div>`;
-        el.ondblclick=()=> openEdit(b.id);
-        area.appendChild(el);
-        // drag
-        let drag=null; el.onmousedown=(ev)=>{ const rect=area.getBoundingClientRect(); const dur=hm2m(b.end)-hm2m(b.start); const off=ev.clientY-(rect.top+((hm2m(b.start)-dayStart)/(dayEnd-dayStart))*gridH); drag={id:b.id,dur,off}; document.onmousemove=(e)=>{if(!drag)return; drag.y=e.clientY}; document.onmouseup=()=>{ if(!drag){clean();return;} const rect2=area.getBoundingClientRect(); let y=Math.max(0, Math.min(gridH-10, drag.y-rect2.top-drag.off)); const ratio=y/gridH; const startRaw=dayStart+Math.round((ratio*(dayEnd-dayStart))/step)*step; const endMin=Math.min(dayEnd,startRaw+drag.dur); const startMin=Math.max(dayStart,endMin-drag.dur); updateBooking({id:b.id,start:m2hm(startMin),end:m2hm(endMin)}); clean(); }; function clean(){document.onmousemove=null;document.onmouseup=null;drag=null;} };
-      });
+  // Навигация дат — читаемые элементы
+  const nav=document.createElement('div');
+  nav.className='flex items-center gap-2 mb-3';
+  nav.innerHTML=`
+    <button class="btnGhost" id="prevD">←</button>
+    <input class="fld" id="calDate" type="date" value="${day}" style="min-height:42px"/>
+    <button class="btnGhost" id="nextD">→</button>
+  `;
+  $cal.appendChild(nav);
+  nav.querySelector('#prevD').onclick=()=>{const d=new Date(day+'T00:00:00'); d.setDate(d.getDate()-1); state.__calDate=toISO(d); renderCalendar();}
+  nav.querySelector('#nextD').onclick=()=>{const d=new Date(day+'T00:00:00'); d.setDate(d.getDate()+1); state.__calDate=toISO(d); renderCalendar();}
+  nav.querySelector('#calDate').onchange=(e)=>{state.__calDate=e.target.value; renderCalendar();};
+
+  const dayStart=hm2m(state.settings.workStart), dayEnd=hm2m(state.settings.workEnd), step=Number(state.settings.step||30);
+  const slots=[]; for(let m=dayStart;m<=dayEnd;m+=60){ slots.push(m2hm(m)); }
+  const pxH=42, gridH=pxH*slots.length;
+
+  const shell=document.createElement('div'); shell.className='grid'; shell.style.gridTemplateColumns='90px 1fr'; $cal.appendChild(shell);
+  const times=document.createElement('div'); times.innerHTML=slots.map(t=>`<div class="h-[42px] text-right pr-2 text-xs text-gray-500 border-b" style="border-color:var(--border)">${t}</div>`).join(''); shell.appendChild(times);
+  const area=document.createElement('div'); area.className='relative noselect'; area.style.height=gridH+'px'; area.style.background='rgba(255,255,255,.03)'; shell.appendChild(area);
+  slots.forEach(()=>{const r=document.createElement('div'); r.className='h-[42px] border-b'; r.style.borderColor='var(--border)'; area.appendChild(r);});
+
+  state.rooms.forEach(room=>{
+    const list=state.bookings.filter(b=>b.roomId===room.id && b.date===day);
+    list.forEach(b=>{
+      const top=((hm2m(b.start)-dayStart)/(dayEnd-dayStart))*gridH;
+      const h=((hm2m(b.end)-hm2m(b.start))/(dayEnd-dayStart))*gridH;
+      const el=document.createElement('div');
+      const color=b.status==='checked-in'?'border-emerald-300/40 bg-emerald-400/15': b.status==='awaiting'?'border-amber-300/40 bg-amber-400/15': b.status==='no-show'?'border-rose-300/40 bg-rose-400/15':'border-indigo-300/40 bg-indigo-400/15';
+      el.className=`absolute left-24 right-3 ${color} border rounded-lg p-2 text-[12px] cursor-grab active:cursor-grabbing`;
+      el.style.top=top+'px'; el.style.height=Math.max(28,h)+'px';
+      el.innerHTML=`<div class="font-medium">${b.title}</div><div class="opacity-80 text-[11px]">${b.start}–${b.end} · ${room.name} · ${b.who||'—'}</div>`;
+      el.ondblclick=()=> openEdit(b.id);
+      area.appendChild(el);
+
+      // D&D
+      let drag=null;
+      el.onmousedown=(ev)=>{
+        const rect=area.getBoundingClientRect();
+        const dur=hm2m(b.end)-hm2m(b.start);
+        const off=ev.clientY-(rect.top+((hm2m(b.start)-dayStart)/(dayEnd-dayStart))*gridH);
+        drag={id:b.id,dur,off};
+        document.onmousemove=(e)=>{if(!drag)return; drag.y=e.clientY};
+        document.onmouseup=()=>{ if(!drag){cleanup();return;}
+          const rect2=area.getBoundingClientRect();
+          let y=Math.max(0, Math.min(gridH-10, drag.y-rect2.top-drag.off));
+          const ratio=y/gridH;
+          const startRaw=dayStart+Math.round((ratio*(dayEnd-dayStart))/step)*step;
+          const endMin=Math.min(dayEnd,startRaw+drag.dur);
+          const startMin=Math.max(dayStart,endMin-drag.dur);
+          updateBooking({id:b.id,start:m2hm(startMin),end:m2hm(endMin)});
+          cleanup();
+        };
+        function cleanup(){document.onmousemove=null;document.onmouseup=null;drag=null;}
+      };
     });
-  }
+  });
+}
 
-  function openEdit(id){
-    const b=state.bookings.find(x=>x.id===id); if(!b) return;
-    const m=document.createElement('div'); m.className='fixed inset-0 bg-black/70 grid place-items-center p-4 z-50';
-    m.innerHTML=`<div class="card rounded-2xl p-4 w-full max-w-md grid gap-3">
+function openEdit(id){
+  const b=state.bookings.find(x=>x.id===id); if(!b) return;
+  $modalRoot.innerHTML=`<div class="fixed inset-0 bg-black/70 grid place-items-center p-4 z-50">
+    <div class="card rounded-2xl p-4 w-full max-w-md grid gap-3">
       <div class="text-lg font-semibold">Редактирование</div>
-      <div class="field"><div class="label">Переговорная</div><select id="er">${state.rooms.map(r=>`<option value="${r.id}" ${r.id===b.roomId?'selected':''}>${r.name}</option>`).join('')}</select></div>
-      <div class="field"><div class="label">Название</div><input id="et" value="${b.title}"></div>
-      <div class="row"><div class="field"><div class="label">Дата</div><input id="ed" type="date" value="${b.date}"></div><div class="field"><div class="label">Начало</div><input id="es" type="time" value="${b.start}"></div><div class="field"><div class="label">Окончание</div><input id="ee" type="time" value="${b.end}"></div></div>
-      <div class="row justify-end"><button class="btnGhost" id="del">Удалить</button><button class="btn" id="ok">Сохранить</button></div>
-    </div>`; document.body.appendChild(m);
-    m.querySelector('#del').onclick=()=>{removeBooking(id); m.remove();};
-    m.querySelector('#ok').onclick=()=>{updateBooking({id,roomId:m.querySelector('#er').value,title:m.querySelector('#et').value,date:m.querySelector('#ed').value,start:m.querySelector('#es').value,end:m.querySelector('#ee').value}); m.remove();};
-    m.onclick=(e)=>{if(e.target===m)m.remove()};
-  }
+      <label class="grid gap-1"><span class="label">Переговорная</span>
+        <select id="er" class="fld">${state.rooms.map(r=>`<option value="${r.id}" ${r.id===b.roomId?'selected':''}>${r.name}</option>`).join('')}</select>
+      </label>
+      <label class="grid gap-1"><span class="label">Название</span><input id="et" class="fld" value="${b.title}"></label>
+      <div class="grid grid-cols-3 gap-2">
+        <label class="grid gap-1"><span class="label">Дата</span><input id="ed" type="date" class="fld" value="${b.date}"></label>
+        <label class="grid gap-1"><span class="label">Начало</span><input id="es" type="time" class="fld" value="${b.start}"></label>
+        <label class="grid gap-1"><span class="label">Окончание</span><input id="ee" type="time" class="fld" value="${b.end}"></label>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button class="btnGhost" id="del">Удалить</button>
+        <button class="btn" id="ok">Сохранить</button>
+      </div>
+    </div>
+  </div>`;
+  const root=$modalRoot.firstChild;
+  root.querySelector('#del').onclick=()=>{removeBooking(id); $modalRoot.innerHTML='';};
+  root.querySelector('#ok').onclick=()=>{updateBooking({id,roomId:root.querySelector('#er').value,title:root.querySelector('#et').value,date:root.querySelector('#ed').value,start:root.querySelector('#es').value,end:root.querySelector('#ee').value}); $modalRoot.innerHTML='';};
+  root.onclick=(e)=>{if(e.target===root)$modalRoot.innerHTML='';};
+}
 
-  function openAuth(){
-    const m=document.createElement('div'); m.className='fixed inset-0 bg-black/70 grid place-items-center p-4 z-50';
-    m.innerHTML=`<div class="card rounded-2xl p-4 w-full max-w-sm grid gap-3"><div class="text-lg font-semibold">Авторизация по PIN</div><input id="pin" class="field" inputmode="numeric" maxlength="8" placeholder="Введите PIN"/><div class="row justify-end"><button class="btn" id="ok">Войти</button></div></div>`; document.body.appendChild(m);
-    m.querySelector('#ok').onclick=()=>{const v=m.querySelector('#pin').value; if(v===state.pins.admin) state.role='admin'; else if(v===state.pins.user) state.role='user'; else alert('Неверный PIN'); save(); renderAll(); m.remove();};
-    m.onclick=(e)=>{if(e.target===m)m.remove()};
-  }
+function openCreateModal(){
+  // модалка: выбор комнаты + длительности
+  $modalRoot.innerHTML=`<div class="fixed inset-0 bg-black/70 grid place-items-center p-4 z-50">
+    <div class="card rounded-2xl p-4 w-full max-w-lg grid gap-3">
+      <div class="text-lg font-semibold">Создать бронь</div>
+      <label class="grid gap-1">
+        <span class="label">Переговорная</span>
+        <select id="roomPick" class="fld">
+          ${state.rooms.map(r=>`<option value="${r.id}">${r.name} · ${r.capacity} мест</option>`).join('')}
+        </select>
+      </label>
+      <div class="grid gap-2">
+        <span class="label">Длительность</span>
+        <div class="grid grid-cols-4 gap-2">
+          ${[30,60,90,120].map(m=>`<button class="btnGhost dur" data-min="${m}">${m===30?'30 мин':m===60?'1 час':m===90?'1,5 часа':'2 часа'}</button>`).join('')}
+        </div>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button class="btnGhost" id="cancel">Отмена</button>
+        <button class="btn" id="ok" disabled>Создать</button>
+      </div>
+    </div>
+  </div>`;
+  const root=$modalRoot.firstChild;
+  let picked=null;
+  root.querySelectorAll('.dur').forEach(b=> b.onclick=()=>{picked=Number(b.dataset.min); root.querySelectorAll('.dur').forEach(x=>x.classList.remove('ring','ring-2','ring-blue-400')); b.classList.add('ring','ring-2','ring-blue-400'); root.querySelector('#ok').disabled=false;});
+  root.querySelector('#cancel').onclick=()=>{$modalRoot.innerHTML='';};
+  root.querySelector('#ok').onclick=()=>{ const rid=root.querySelector('#roomPick').value; createBooking(rid,picked); $modalRoot.innerHTML=''; };
+  root.onclick=(e)=>{if(e.target===root)$modalRoot.innerHTML='';};
+}
 
-  function toast(msg){ try{ if(tg?.showPopup){ tg.showPopup({title:'Roomie+',message:String(msg),buttons:[{type:'ok'}]}); return;} }catch(_){ } alert(msg); }
+function openAuth(){
+  $modalRoot.innerHTML=`<div class="fixed inset-0 bg-black/70 grid place-items-center p-4 z-50">
+    <div class="card rounded-2xl p-4 w-full max-w-sm grid gap-3">
+      <div class="text-lg font-semibold">Авторизация по PIN</div>
+      <input id="pin" class="fld" inputmode="numeric" maxlength="8" placeholder="Введите PIN"/>
+      <div class="flex justify-end gap-2">
+        <button class="btn" id="ok">Войти</button>
+      </div>
+    </div>
+  </div>`;
+  const root=$modalRoot.firstChild;
+  root.querySelector('#ok').onclick=()=>{const v=root.querySelector('#pin').value; if(v===state.pins.admin) state.role='admin'; else if(v===state.pins.user) state.role='user'; else {toast('Неверный PIN'); return;} save(); renderAll(); $modalRoot.innerHTML='';};
+  root.onclick=(e)=>{if(e.target===root)$modalRoot.innerHTML='';};
+}
 
-  function renderAll(){ renderRooms(); renderList(); renderCalendar(); }
-  renderAll();
-  </script>
+function openAdmin(){
+  if(!isAdmin()){ toast('Нужны права администратора'); return; }
+  const cfg={...state.settings}; const rooms=state.rooms.map(r=>({...r}));
+  $modalRoot.innerHTML=`<div class="fixed inset-0 bg-black/70 grid place-items-center p-4 z-50">
+    <div class="card rounded-2xl p-5 w-full max-w-3xl grid gap-4">
+      <div class="flex items-center justify-between">
+        <div class="text-lg font-semibold">Админ-панель</div>
+        <button id="close" class="btnGhost">Закрыть</button>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <section>
+          <div class="font-medium mb-2">Настройки времени</div>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="grid gap-1"><span class="label">Начало дня</span><input id="ws" type="time" class="fld" value="${cfg.workStart}"></label>
+            <label class="grid gap-1"><span class="label">Конец дня</span><input id="we" type="time" class="fld" value="${cfg.workEnd}"></label>
+            <label class="grid gap-1"><span class="label">Шаг (мин)</span>
+              <select id="step" class="fld">
+                <option value="15" ${cfg.step==15?'selected':''}>15</option>
+                <option value="30" ${cfg.step==30?'selected':''}>30</option>
+                <option value="60" ${cfg.step==60?'selected':''}>60</option>
+              </select>
+            </label>
+            <label class="grid gap-1"><span class="label">Буфер ДО</span><input id="bb" type="number" class="fld" value="${cfg.bufferBefore}"></label>
+            <label class="grid gap-1"><span class="label">Буфер ПОСЛЕ</span><input id="ba" type="number" class="fld" value="${cfg.bufferAfter}"></label>
+          </div>
+        </section>
+        <section>
+          <div class="font-medium mb-2">Переговорные</div>
+          <div id="roomList" class="grid gap-2 max-h-60 overflow-auto pr-1">
+            ${rooms.map(r=>`
+              <div class="grid grid-cols-5 gap-2 items-center">
+                <input data-id="${r.id}" data-k="name" class="fld col-span-3" value="${r.name}">
+                <input data-id="${r.id}" data-k="capacity" type="number" class="fld" value="${r.capacity}">
+                <button data-del="${r.id}" class="btnGhost">Удалить</button>
+              </div>`).join('')}
+          </div>
+          <button id="addRoom" class="btn mt-2">Добавить переговорную</button>
+        </section>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button id="save" class="btn">Сохранить</button>
+      </div>
+    </div>
+  </div>`;
+  const root=$modalRoot.firstChild;
+  root.querySelector('#close').onclick=()=>{$modalRoot.innerHTML='';};
+  root.querySelectorAll('[data-del]').forEach(x=> x.onclick=()=>{ const id=x.dataset.del; const i=rooms.findIndex(r=>r.id===id); if(i>-1) rooms.splice(i,1); openAdmin(); });
+  root.querySelectorAll('[data-k]').forEach(x=> x.onchange=(e)=>{ const id=e.target.dataset.id; const k=e.target.dataset.k; const r=rooms.find(r=>r.id===id); if(r){ r[k]=k==='capacity'?Number(e.target.value):e.target.value; }});
+  root.querySelector('#addRoom').onclick=()=>{ rooms.push({id:uid(),name:'Новая переговорная',capacity:4}); openAdmin(); };
+  root.querySelector('#save').onclick=()=>{
+    state.settings={
+      workStart:root.querySelector('#ws').value,
+      workEnd:root.querySelector('#we').value,
+      step:Number(root.querySelector('#step').value),
+      bufferBefore:Number(root.querySelector('#bb').value||0),
+      bufferAfter:Number(root.querySelector('#ba').value||0),
+    };
+    state.rooms=rooms; save(); renderAll(); toast('Сохранено'); $modalRoot.innerHTML=''; };
+  root.onclick=(e)=>{if(e.target===root)$modalRoot.innerHTML='';};
+}
+
+function toast(msg){
+  try{ if(tg?.showPopup){ tg.showPopup({title:'Roomie+',message:String(msg),buttons:[{type:'ok'}]}); return; } }catch(_){}
+  console.log('Toast:',msg);
+}
+
+function renderAll(){ renderRooms(); renderList(); renderCalendar(); }
+renderAll();
+</script>
 </body>
 </html>
