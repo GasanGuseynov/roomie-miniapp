@@ -28,6 +28,8 @@ const uid =()=>Math.random().toString(36).slice(2,10);
 const hm2m=(hm)=>{const [h,m]=String(hm||'00:00').split(':').map(Number);return (h||0)*60+(m||0)}
 const m2hm=(m)=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`
 const toISO=(d)=>new Date(d).toISOString().slice(0,10)
+const parseISO=(s)=>{const [y,m,d]=s.split('-').map(Number); return new Date(y, (m||1)-1, d||1)}
+const fmtDate=(d)=> new Date(d+'T00:00:00').toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'})
 const todayISO=()=>toISO(new Date())
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v))
 const LS='roomie_v3_dark'
@@ -40,7 +42,7 @@ const defaultRooms=[
 const defaultState={
   role:'user', pins:{admin:'0404', user:'0000'},
   rooms:defaultRooms,
-  bookings:[], // {id, title, who, roomId, date, start, end, status}
+  bookings:[], // {id, title, who, createdBy, roomId, date, start, end, status}
   settings:{workStart:'09:00',workEnd:'20:00',step:30,bufferBefore:0,bufferAfter:0,checkinWindow:15,requireCheckin:false}
 }
 
@@ -53,12 +55,24 @@ const root=document.getElementById('root');
 
 function setState(p){state=p(state); save(state); render();}
 function isAdmin(){return state.role==='admin'}
+function currentUserId(){ return tg?.initDataUnsafe?.user?.id ?? null; }
+function currentUserName(){
+  const u=tg?.initDataUnsafe?.user;
+  return u ? [u.first_name,u.last_name].filter(Boolean).join(' ') : (state.__who || 'Пользователь');
+}
 
 // ==== booking ops
 function conflicts(a,b){ if(a.roomId!==b.roomId||a.date!==b.date) return false; const bufB=+state.settings.bufferBefore||0,bufA=+state.settings.bufferAfter||0; const as=hm2m(a.start)-bufB, ae=hm2m(a.end)+bufA, bs=hm2m(b.start)-bufB, be=hm2m(b.end)+bufA; return as<be && bs<ae }
+function canDelete(b){
+  if(isAdmin()) return true;
+  const uidNow=currentUserId();
+  if (uidNow && b.createdBy) return uidNow===b.createdBy;
+  return (b.who||'').trim()===(currentUserName()||'').trim();
+}
 function addBooking(b){
   const hit=state.bookings.find(x=>conflicts(x,b)); if(hit){toast(`Пересечение с «${hit.title}» ${hit.start}–${hit.end}`);return}
-  setState(s=>({...s, bookings:[...s.bookings, {...b, id:uid(), status:'scheduled'}]}));
+  const createdBy=currentUserId();
+  setState(s=>({...s, bookings:[...s.bookings, {...b, id:uid(), status:'scheduled', createdBy}]}));
 }
 function removeBooking(id){ setState(s=>({...s, bookings:s.bookings.filter(b=>b.id!==id)})) }
 function updateBooking(patch){
@@ -69,11 +83,8 @@ function updateBooking(patch){
   setState(s=>({...s, bookings:s.bookings.map(b=>b.id===patch.id?{...b,...patch}:b)}))
 }
 
-// ==== UI pieces
+// ==== UI bits
 function badge(txt){return `<span class="px-2 py-0.5 rounded-md text-[11px] bg-white/10">${txt}</span>`}
-function csvHref(list){ if(!list?.length) return 'data:text/plain,'; const head=['title','room','who','date','start','end']; const rows=list.map(b=>[b.title,b.roomId,b.who,b.date,b.start,b.end]); const all=[head,...rows].map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n'); return 'data:text/csv;charset=utf-8,'+encodeURIComponent(all) }
-
-// duration picker modal
 function pickDuration(cb){
   const dlg=document.createElement('div'); dlg.className='fixed inset-0 z-50 grid place-items-center bg-black/70 p-4';
   dlg.innerHTML=`<div class="bg-[var(--card)] border border-[var(--border)] w-full max-w-sm rounded-2xl p-4">
@@ -83,15 +94,15 @@ function pickDuration(cb){
     </div>
     <div class="text-right mt-4"><button id="close" class="text-sm text-white/70">Отмена</button></div>
   </div>`; document.body.appendChild(dlg);
-  dlg.querySelectorAll('[data-m]').forEach(b=> b.onclick=()=>{ cb(+b.dataset.m); dlg.remove(); });
-  dlg.querySelector('#close').onclick=()=>dlg.remove();
+  dlg.querySelectorAll('[data-m]').forEach(b=> b.addEventListener('click', ()=>{ cb(+b.dataset.m); dlg.remove(); }));
+  dlg.querySelector('#close').addEventListener('click', ()=>dlg.remove());
 }
 
 function render(){
   root.innerHTML='';
   const wrap=document.createElement('div'); wrap.className='grid gap-4';
 
-  // --- Header brand + status
+  // Header
   const top=document.createElement('header');
   top.className='flex items-center justify-between gap-3';
   top.innerHTML=`
@@ -106,11 +117,10 @@ function render(){
       <button class="btn" id="auth">${isAdmin()?'Выйти по PIN':'Войти по PIN'}</button>
     </div>`;
   wrap.appendChild(top);
-
-  top.querySelector('#auth').onclick=()=>openAuth();
+  top.querySelector('#auth').addEventListener('click', openAuth);
   top.querySelector('#openAdmin')?.addEventListener('click', openAdmin);
 
-  // --- Booking form row (дата, начало, окончание, ФИО, название, повторы и кнопка)
+  // Booking form
   const row=document.createElement('section');
   row.className='grid gap-3 p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)]';
 
@@ -119,22 +129,17 @@ function render(){
     date: state.__date || todayISO(),
     start: state.__start || '10:00',
     end:   state.__end || '11:00',
-    who:   state.__who || (tg&&tg.initDataUnsafe?.user?.first_name? `${tg.initDataUnsafe.user.first_name} ${tg.initDataUnsafe.user.last_name||''}`.trim() : 'Иванов Иван'),
+    who:   state.__who || currentUserName(),
     title: state.__title || 'Синк по проекту',
     count: 1, repeat:'none'
   }
-
-  // keep room selection between renders
   if(!state.__room) state.__room = state.rooms[0]?.id;
 
   function setEndByDuration(min){ const endMin = hm2m(form.start)+min; form.end=m2hm(endMin); row.querySelector('#end').value=form.end }
 
   row.innerHTML=`
     <div class="row">
-      <label class="grid gap-1">
-        <span class="text-xs text-white/60">Дата</span>
-        <input id="date" type="date" class="fld" value="${form.date}">
-      </label>
+      <label class="grid gap-1"><span class="text-xs text-white/60">Дата</span><input id="date" type="date" class="fld" value="${form.date}"></label>
       <label class="grid gap-1">
         <span class="text-xs text-white/60">Начало</span>
         <div class="flex gap-2">
@@ -142,45 +147,28 @@ function render(){
           <button id="dur" type="button" class="btnGhost" title="Выбрать длительность">⏱</button>
         </div>
       </label>
-      <label class="grid gap-1">
-        <span class="text-xs text-white/60">Окончание</span>
-        <input id="end" type="time" step="${step*60}" class="fld" value="${form.end}">
-      </label>
-      <label class="grid gap-1">
-        <span class="text-xs text-white/60">ФИО бронирующего</span>
-        <input id="who" class="fld" value="${form.who}">
-      </label>
-      <label class="grid gap-1 col-span-2">
-        <span class="text-xs text-white/60">Название встречи</span>
-        <input id="title" class="fld" placeholder="Например: Синк по проекту" value="${form.title}">
-      </label>
-      <label class="grid gap-1">
-        <span class="text-xs text-white/60">Повтор</span>
-        <select id="repeat" class="fld"><option value="none">Без повтора</option><option value="daily">Ежедневно</option><option value="weekly">Еженедельно</option></select>
-      </label>
-      <label class="grid gap-1">
-        <span class="text-xs text-white/60">Кол-во</span>
-        <input id="count" type="number" min="1" value="1" class="fld">
-      </label>
+      <label class="grid gap-1"><span class="text-xs text-white/60">Окончание</span><input id="end" type="time" step="${step*60}" class="fld" value="${form.end}"></label>
+      <label class="grid gap-1"><span class="text-xs text-white/60">ФИО бронирующего</span><input id="who" class="fld" value="${form.who}"></label>
+      <label class="grid gap-1 col-span-2"><span class="text-xs text-white/60">Название встречи</span><input id="title" class="fld" placeholder="Например: Синк по проекту" value="${form.title}"></label>
+      <label class="grid gap-1"><span class="text-xs text-white/60">Повтор</span><select id="repeat" class="fld"><option value="none">Без повтора</option><option value="daily">Ежедневно</option><option value="weekly">Еженедельно</option></select></label>
+      <label class="grid gap-1"><span class="text-xs text-white/60">Кол-во</span><input id="count" type="number" min="1" value="1" class="fld"></label>
     </div>
     <div class="flex items-center justify-between gap-3 mt-2">
       <div class="text-sm text-white/70">Выбранная переговорная: <span class="font-medium" id="pickedRoomName"></span></div>
       <button class="btn" id="create">Создать бронь</button>
-    </div>
-  `;
+    </div>`;
   wrap.appendChild(row);
 
-  // handlers
-  row.querySelector('#date').onchange   = e=>{form.date=e.target.value; state.__date=form.date}
-  row.querySelector('#start').onchange  = e=>{form.start=e.target.value; state.__start=form.start}
-  row.querySelector('#end').onchange    = e=>{form.end=e.target.value; state.__end=form.end}
-  row.querySelector('#who').oninput     = e=>{form.who=e.target.value; state.__who=form.who}
-  row.querySelector('#title').oninput   = e=>{form.title=e.target.value; state.__title=form.title}
-  row.querySelector('#repeat').onchange = e=>{form.repeat=e.target.value}
-  row.querySelector('#count').onchange  = e=>{form.count=+e.target.value||1}
-  row.querySelector('#dur').onclick     = ()=> pickDuration(m=>setEndByDuration(m))
+  row.querySelector('#date').addEventListener('change',e=>{form.date=e.target.value; state.__date=form.date});
+  row.querySelector('#start').addEventListener('change',e=>{form.start=e.target.value; state.__start=form.start});
+  row.querySelector('#end').addEventListener('change',e=>{form.end=e.target.value; state.__end=form.end});
+  row.querySelector('#who').addEventListener('input',e=>{form.who=e.target.value; state.__who=form.who});
+  row.querySelector('#title').addEventListener('input',e=>{form.title=e.target.value; state.__title=form.title});
+  row.querySelector('#repeat').addEventListener('change',e=>{form.repeat=e.target.value});
+  row.querySelector('#count').addEventListener('change',e=>{form.count=+e.target.value||1});
+  row.querySelector('#dur').addEventListener('click',()=>pickDuration(m=>setEndByDuration(m)));
 
-  // --- Rooms list with selection
+  // rooms list
   const rlist=document.createElement('section');
   rlist.className='p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)]'
   rlist.innerHTML=`
@@ -188,42 +176,84 @@ function render(){
     <div class="grid gap-2">
       ${state.rooms.map(r=>`<button type="button" data-rid="${r.id}" class="w-full text-left p-3 rounded-xl border ${state.__room===r.id?'border-white/40 bg-white/10':'border-[var(--border)] bg-black/20'} hover:bg-white/10 transition">
         <div class="flex items-center justify-between">
-          <div>
-            <div class="font-medium">${r.name}</div>
-            <div class="text-xs text-white/60">${r.capacity} мест</div>
-          </div>
+          <div><div class="font-medium">${r.name}</div><div class="text-xs text-white/60">${r.capacity} мест</div></div>
           <div class="text-xs text-white/60">ID: ${r.id}</div>
         </div>
       </button>`).join('')}
     </div>`;
   wrap.appendChild(rlist);
 
-  // show picked room name
   function setPicked(){ const rn = state.rooms.find(x=>x.id===state.__room)?.name || '—'; row.querySelector('#pickedRoomName').textContent = rn }
   setPicked();
-
-  rlist.querySelectorAll('[data-rid]').forEach(b=> b.onclick=()=>{ state.__room=b.getAttribute('data-rid'); render(); });
+  rlist.querySelectorAll('[data-rid]').forEach(b=> b.addEventListener('click',()=>{ state.__room=b.getAttribute('data-rid'); render(); }));
 
   // create booking
-  row.querySelector('#create').onclick=()=>{
+  row.querySelector('#create').addEventListener('click',()=>{
     const roomId = state.__room; if(!roomId){toast('Выберите переговорную');return}
     if(hm2m(form.end)<=hm2m(form.start)){ toast('Окончание должно быть позже начала'); return }
     const who = form.who?.trim() || '—';
     const base={ title: form.title?.trim()||'Встреча', who, roomId, date: form.date, start: form.start, end: form.end };
-    // expand repeats
-    const list=[]; const cnt=+form.count||1; const baseDate=new Date(base.date+'T00:00:00');
+    const list=[]; const cnt=+form.count||1; const baseDate=parseISO(base.date);
     for(let i=0;i<cnt;i++){ const d=new Date(baseDate); if(form.repeat==='daily') d.setDate(d.getDate()+i); else if(form.repeat==='weekly') d.setDate(d.getDate()+7*i); list.push({...base, date:toISO(d)}); }
-    // check conflicts for all
     for(const x of list){ const hit=state.bookings.find(b=>conflicts(b,x)); if(hit){toast(`Пересечение с «${hit.title}» ${hit.start}–${hit.end}`); return} }
     list.forEach(addBooking);
     toast('Бронь создана');
+  });
+
+  // === Мои брони
+  const mine=document.createElement('section');
+  mine.className='p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] grid gap-3';
+  const uidNow=currentUserId(), uname=currentUserName();
+  const mineList = (isAdmin()
+    ? [...state.bookings]
+    : state.bookings.filter(b=> (uidNow && b.createdBy && b.createdBy===uidNow) || (!b.createdBy && (b.who||'').trim()===uname.trim()))
+  ).sort((a,b)=> (a.date+a.start).localeCompare(b.date+b.start));
+
+  mine.innerHTML = `
+    <div class="flex items-center justify-between">
+      <h2 class="font-semibold">Мои брони</h2>
+      <input id="search" class="fld w-60" placeholder="Поиск: название или комната">
+    </div>
+    ${mineList.length
+      ? `<ul id="mineList" class="divide-y" style="border-color:var(--border)"></ul>`
+      : `<p class="text-sm text-white/60">Пока нет созданных вами броней.</p>`
+    }`;
+  wrap.appendChild(mine);
+
+  const roomName=(id)=> state.rooms.find(r=>r.id===id)?.name || '—';
+
+  if(mineList.length){
+    const ul=mine.querySelector('#mineList');
+    const renderMine=(q='')=>{
+      ul.innerHTML = mineList
+        .filter(b=>{
+          if(!q) return true;
+          q=q.toLowerCase();
+          return (b.title||'').toLowerCase().includes(q) || roomName(b.roomId).toLowerCase().includes(q);
+        })
+        .map(b=>`
+          <li class="py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="font-medium truncate">${b.title}</div>
+              <div class="text-xs text-white/60">${fmtDate(b.date)} · ${b.start}–${b.end} · ${roomName(b.roomId)} · ${b.who||'—'}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="btnGhost text-sm" data-edit="${b.id}">Редактировать</button>
+              ${canDelete(b)?`<button class="btnGhost text-sm" data-del="${b.id}">Удалить</button>`:''}
+            </div>
+          </li>
+        `).join('');
+      ul.querySelectorAll('[data-edit]').forEach(x=> x.addEventListener('click',()=>openEdit(x.getAttribute('data-edit'))));
+      ul.querySelectorAll('[data-del]').forEach(x=> x.addEventListener('click',()=>removeBooking(x.getAttribute('data-del'))));
+    };
+    renderMine();
+    mine.querySelector('#search').addEventListener('input', e=>renderMine(e.target.value));
   }
 
-  // --- Calendar of day (with date selector and arrows)
+  // calendar
   const calWrap=document.createElement('section');
   calWrap.className='p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] grid gap-3';
-  calWrap.innerHTML=`<div class="flex items-center justify-between"><h2 class="font-semibold">Календарь дня</h2><span class="text-xs text-white/60">Роль: ${isAdmin()?'Админ':'Пользователь'}</span></div>
-  <div id="cal"></div>`;
+  calWrap.innerHTML=`<div class="flex items-center justify-between"><h2 class="font-semibold">Календарь дня</h2><span class="text-xs text-white/60">Роль: ${isAdmin()?'Админ':'Пользователь'}</span></div><div id="cal"></div>`;
   wrap.appendChild(calWrap);
 
   root.appendChild(wrap);
@@ -234,26 +264,28 @@ function renderCalendar(){
   const $cal=document.getElementById('cal');
   const day = state.__calDate || state.__date || todayISO();
   $cal.innerHTML='';
+
   const nav=document.createElement('div');
   nav.className='flex items-center gap-2 mb-3 relative z-10';
   nav.innerHTML=`<button type="button" class="btnGhost" id="prevD">←</button>
                  <input class="fld" id="calDate" type="date" value="${day}" style="min-height:42px"/>
                  <button type="button" class="btnGhost" id="nextD">→</button>`;
   $cal.appendChild(nav);
-  nav.querySelector('#prevD').onclick=()=>{const d=new Date(day+'T00:00:00'); d.setDate(d.getDate()-1); state.__calDate=toISO(d); renderCalendar(); }
-  nav.querySelector('#nextD').onclick=()=>{const d=new Date(day+'T00:00:00'); d.setDate(d.getDate()+1); state.__calDate=toISO(d); renderCalendar(); }
-  nav.querySelector('#calDate').onchange=(e)=>{ state.__calDate=e.target.value; renderCalendar(); }
+
+  nav.querySelector('#prevD').addEventListener('click', ()=>{const d=parseISO(day); d.setDate(d.getDate()-1); state.__calDate=toISO(d); renderCalendar(); });
+  nav.querySelector('#nextD').addEventListener('click', ()=>{const d=parseISO(day); d.setDate(d.getDate()+1); state.__calDate=toISO(d); renderCalendar(); });
+  nav.querySelector('#calDate').addEventListener('change', (e)=>{ state.__calDate=e.target.value; renderCalendar(); });
 
   const dayStart=hm2m(state.settings.workStart), dayEnd=hm2m(state.settings.workEnd), step=+state.settings.step||30;
   const slots=[]; for(let m=dayStart;m<=dayEnd;m+=60) slots.push(m2hm(m));
   const pxH=42, gridH=pxH*slots.length;
 
   const shell=document.createElement('div'); shell.className='grid'; shell.style.gridTemplateColumns='90px 1fr'; $cal.appendChild(shell);
-  const times=document.createElement('div'); times.innerHTML=slots.map(t=>`<div class=\"h-[42px] text-right pr-2 text-xs text-gray-500 border-b\" style=\"border-color:var(--border)\">${t}</div>`).join(''); shell.appendChild(times);
+  const times=document.createElement('div'); times.innerHTML=slots.map(t=>`<div class="h-[42px] text-right pr-2 text-xs text-gray-500 border-b" style="border-color:var(--border)">${t}</div>`).join(''); shell.appendChild(times);
   const area=document.createElement('div'); area.className='relative noselect z-0'; area.style.height=gridH+'px'; area.style.background='rgba(255,255,255,.03)'; area.style.marginTop='2px'; shell.appendChild(area);
   slots.forEach(()=>{ const r=document.createElement('div'); r.className='h-[42px] border-b'; r.style.borderColor='var(--border)'; area.appendChild(r); });
 
-  // Draw blocks for current day for all rooms
+  // draw blocks
   state.rooms.forEach(room=>{
     state.bookings.filter(b=>b.roomId===room.id && b.date===day).forEach(b=>{
       const top=((hm2m(b.start)-dayStart)/(dayEnd-dayStart))*gridH;
@@ -262,17 +294,21 @@ function renderCalendar(){
       const color=b.status==='checked-in'?'border-emerald-300/40 bg-emerald-400/15': b.status==='awaiting'?'border-amber-300/40 bg-amber-400/15': b.status==='no-show'?'border-rose-300/40 bg-rose-400/15':'border-indigo-300/40 bg-indigo-400/15';
       el.className=`absolute left-24 right-3 ${color} border rounded-lg p-2 text-[12px] cursor-grab active:cursor-grabbing`;
       el.style.top=top+'px'; el.style.height=Math.max(28,h)+'px';
-      el.innerHTML=`<div class='font-medium truncate'>${b.title}</div><div class='text-[11px] opacity-80'>${b.start}–${b.end} · ${room.name} · ${b.who||'—'}</div>`;
-      el.ondblclick=()=>openEdit(b.id);
+      el.innerHTML=`<div class='font-medium truncate'>${b.title}</div>
+        <div class='text-[11px] opacity-80'>${b.start}–${b.end} · ${room.name} · ${b.who||'—'}</div>
+        ${canDelete(b)?`<button title="Удалить" data-del="${b.id}" class="absolute top-1.5 right-1.5 text-[11px] px-2 py-0.5 rounded bg-white/20 hover:bg-white/30">🗑</button>`:''}`;
+      el.addEventListener('dblclick', ()=>openEdit(b.id));
       area.appendChild(el);
 
+      el.querySelector('[data-del]')?.addEventListener('click', (e)=>{ e.stopPropagation(); removeBooking(b.id); });
+
       // D&D move vertically
-      let drag=null; el.onmousedown=(ev)=>{
+      let drag=null; el.addEventListener('mousedown', (ev)=>{
         const rect=area.getBoundingClientRect(); const dur=hm2m(b.end)-hm2m(b.start); const off=ev.clientY-(rect.top+((hm2m(b.start)-dayStart)/(dayEnd-dayStart))*gridH); drag={id:b.id,dur,off};
         document.onmousemove=e=>{if(!drag)return; drag.y=e.clientY};
         document.onmouseup=()=>{ if(!drag){cleanup();return} const r2=area.getBoundingClientRect(); let y=clamp(drag.y-r2.top-drag.off,0,gridH-10); const ratio=y/gridH; const startRaw=dayStart+Math.round((ratio*(dayEnd-dayStart))/step)*step; const endMin=Math.min(dayEnd,startRaw+drag.dur); const startMin=Math.max(dayStart,endMin-drag.dur); updateBooking({id:b.id,start:m2hm(startMin),end:m2hm(endMin)}); cleanup(); };
         function cleanup(){document.onmousemove=null;document.onmouseup=null;drag=null}
-      };
+      });
     });
   });
 }
@@ -285,8 +321,14 @@ function openAuth(){
     <input id="pin" class="fld w-full mb-3" placeholder="Введите PIN" inputmode="numeric"/>
     <div class="flex justify-end gap-2"><button id="cancel" class="text-sm text-white/70">Отмена</button><button id="ok" class="btn">Войти</button></div>
   </div>`; document.body.appendChild(dlg);
-  dlg.querySelector('#cancel').onclick=()=>dlg.remove();
-  dlg.querySelector('#ok').onclick=()=>{ const v=dlg.querySelector('#pin').value.trim(); if(v===state.pins.admin) setState(s=>({...s,role:'admin'})); else if(v===state.pins.user) setState(s=>({...s,role:'user'})); else toast('Неверный PIN'); dlg.remove(); };
+  dlg.querySelector('#cancel').addEventListener('click', ()=>dlg.remove());
+  dlg.querySelector('#ok').addEventListener('click', ()=>{
+    const v=dlg.querySelector('#pin').value.trim();
+    if(v===state.pins.admin) setState(s=>({...s,role:'admin'}));
+    else if(v===state.pins.user) setState(s=>({...s,role:'user'}));
+    else toast('Неверный PIN');
+    dlg.remove();
+  });
 }
 
 function openAdmin(){
@@ -314,17 +356,18 @@ function openAdmin(){
     <div class="text-right"><button id="save" class="btn">Сохранить</button></div>
   </div>`; document.body.appendChild(dlg);
 
-  dlg.querySelector('#addRoom').onclick=()=>{ rooms.push({id:uid(),name:'Новая',capacity:4}); dlg.remove(); openAdmin(); };
-  dlg.querySelectorAll('[data-del]').forEach(x=> x.onclick=()=>{ const id=x.getAttribute('data-del'); const i=rooms.findIndex(r=>r.id===id); if(i>-1) rooms.splice(i,1); dlg.remove(); openAdmin(); });
-  dlg.querySelectorAll('[data-k]').forEach(x=> x.onchange=(e)=>{ const id=e.target.getAttribute('data-id'); const k=e.target.getAttribute('data-k'); const r=rooms.find(r=>r.id===id); if(r) r[k]= k==='capacity'? Number(e.target.value): e.target.value; });
+  dlg.querySelector('#addRoom').addEventListener('click', ()=>{ rooms.push({id:uid(),name:'Новая',capacity:4}); dlg.remove(); openAdmin(); });
+  dlg.querySelectorAll('[data-del]').forEach(x=> x.addEventListener('click',()=>{ const id=x.getAttribute('data-del'); const i=rooms.findIndex(r=>r.id===id); if(i>-1) rooms.splice(i,1); dlg.remove(); openAdmin(); }));
+  dlg.querySelectorAll('[data-k]').forEach(x=> x.addEventListener('change',(e)=>{ const id=e.target.getAttribute('data-id'); const k=e.target.getAttribute('data-k'); const r=rooms.find(r=>r.id===id); if(r) r[k]= k==='capacity'? Number(e.target.value): e.target.value; }));
 
-  dlg.querySelector('#close').onclick=()=>dlg.remove();
-  dlg.querySelector('#save').onclick=()=>{ const ns={ workStart:dlg.querySelector('#ws').value, workEnd:dlg.querySelector('#we').value, step:Number(dlg.querySelector('#step').value) }; setState(s=>({...s, rooms, settings:{...s.settings,...ns}})); dlg.remove(); toast('Сохранено'); };
+  dlg.querySelector('#close').addEventListener('click', ()=>dlg.remove());
+  dlg.querySelector('#save').addEventListener('click', ()=>{ const ns={ workStart:dlg.querySelector('#ws').value, workEnd:dlg.querySelector('#we').value, step:Number(dlg.querySelector('#step').value) }; setState(s=>({...s, rooms, settings:{...s.settings,...ns}})); dlg.remove(); toast('Сохранено'); });
 }
 
 function openEdit(id){
   const b=state.bookings.find(x=>x.id===id); if(!b) return;
   const dlg=document.createElement('div'); dlg.className='fixed inset-0 z-50 grid place-items-center bg-black/70 p-4';
+  const canDel=canDelete(b);
   dlg.innerHTML=`<div class='w-full max-w-md bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 grid gap-3'>
     <h3 class='text-lg font-semibold'>Редактирование</h3>
     <label class='grid gap-1'><span class='text-xs text-white/60'>Название</span><input id='t' class='fld' value='${b.title}'/></label>
@@ -335,13 +378,16 @@ function openEdit(id){
       <label class='grid gap-1'><span class='text-xs text-white/60'>Окончание</span><input id='e' type='time' class='fld' value='${b.end}'/></label>
     </div>
     <div class='flex justify-between gap-2'>
-      <button id='del' class='btnGhost'>Удалить</button>
+      ${canDel?`<button id='del' class='btnGhost'>Удалить</button>`:'<span></span>'}
       <div class='flex gap-2'><button id='ok' class='btn'>Сохранить</button><button id='cancel' class='btnGhost'>Отмена</button></div>
     </div>
   </div>`; document.body.appendChild(dlg);
-  dlg.querySelector('#cancel').onclick=()=>dlg.remove();
-  dlg.querySelector('#del').onclick=()=>{ removeBooking(id); dlg.remove(); };
-  dlg.querySelector('#ok').onclick=()=>{ updateBooking({id, title:dlg.querySelector('#t').value, who:dlg.querySelector('#w').value, date:dlg.querySelector('#d').value, start:dlg.querySelector('#s').value, end:dlg.querySelector('#e').value}); dlg.remove(); };
+  dlg.querySelector('#cancel').addEventListener('click', ()=>dlg.remove());
+  if(canDel) dlg.querySelector('#del').addEventListener('click', ()=>{ removeBooking(id); dlg.remove(); });
+  dlg.querySelector('#ok').addEventListener('click', ()=>{
+    updateBooking({id, title:dlg.querySelector('#t').value, who:dlg.querySelector('#w').value, date:dlg.querySelector('#d').value, start:dlg.querySelector('#s').value, end:dlg.querySelector('#e').value});
+    dlg.remove();
+  });
 }
 
 render();
